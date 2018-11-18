@@ -79,8 +79,8 @@ class GutenbergData:
 
         return passages, labels
 
-
-if __name__ == '__main__':
-    gd = GutenbergData().load_from("data/american")
+def gutenberg_dataset(train_path):
+    gd = GutenbergData().load_from(train_path)
     data = gd.create_dataset()
-    print("finished")
+    print("Finished loading data")
+    return data
