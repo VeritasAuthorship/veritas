@@ -21,7 +21,7 @@ class GutenbergBook:
         self.title = title
         self.text = text
 
-    def select_passages(self, n=5, length=1, method="paragraph"):
+    def select_passages(self, n, length, method):
         """
         Select n passages at random from a book, either by paragraph
         or by sentence.
@@ -43,6 +43,10 @@ class GutenbergBook:
 
         return [_single_passage(sequence, length) for _ in range(n)]
 
+class Example:
+    def __init__(self, passage, author):
+        self.passage = passage
+        self.author = author
 
 class GutenbergData:
     def __init__(self):
@@ -62,25 +66,26 @@ class GutenbergData:
     def create_dataset(self, passages_per_book=10, passage_length=3, passage_type="paragraph"):
         """
         Create a dataset from a set of books. Can specify # passages, passage length, passage
-        type (sentence / paragraph). Output is a tuple (X, y).
+        type (sentence / paragraph). Output is a list of Examples.
 
         X: list of passages (text)
         y: list of authors
         """
-        passages = []
-        labels = []
+        examples = []
 
         for book in self.books:
             selected = book.select_passages(n=passages_per_book, length=passage_length, method=passage_type)
-            author = repeat(book.author, len(selected))
+            #author = repeat(book.author, len(selected))
 
-            passages.extend(selected)
-            labels.extend(author)
+            for passage in selected:
+                examples.append(Example(passage, book.author))
 
-        return passages, labels
+        return examples
 
 def gutenberg_dataset(train_path):
     gd = GutenbergData().load_from(train_path)
     data = gd.create_dataset()
     print("Finished loading data")
+
+    # TODO: test data splitting
     return data
