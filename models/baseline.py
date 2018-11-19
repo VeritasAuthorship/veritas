@@ -1,6 +1,7 @@
 from utils import *
 from veritas import *
 import numpy as np
+from nltk import sent_tokenize, word_tokenize
 
 '''
 Baseline approach: For each author maintain a list of most used words, that are not present in stopwords
@@ -20,14 +21,16 @@ class Signature:
         self.counter = {}
         self.n = n
 
-    def get_final_words():
+    def get_final_words(self):
         '''
         Return highest n ranked words from counter
         '''
 
-        self.words = sorted(counter, key=counter.get, reverse=True)[:self.n]
+        self.words = sorted(self.counter, key=self.counter.get, reverse=True)[:self.n]
         return self.words
 
 
 def train_baseline(train_data):
+    word_indexer = Indexer()
     
+    # Do an initial read of the entire vocabulary to add words to the indexer

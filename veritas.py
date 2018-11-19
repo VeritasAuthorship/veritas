@@ -23,7 +23,7 @@ if __name__ == "__main__":
     if args.model == 'BASELINE':
         # Get books from train path and call baseline model train function
         if (args.train_type == 'GUTENBERG'):
-            data =  gutenberg_dataset(args.train_path)
+            train_data =  gutenberg_dataset(args.train_path)
             print("training")
             # Implement training
             print("testing")            
