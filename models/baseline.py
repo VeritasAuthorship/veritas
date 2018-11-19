@@ -1,7 +1,7 @@
 from utils import *
 import numpy as np
 from nltk.tokenize import sent_tokenize, word_tokenize
-
+import random
 
 '''
 Baseline approach: For each author maintain a list of most used words, that are not present in stopwords
@@ -32,6 +32,7 @@ class Signature:
 
 def train_baseline(train_data):
     word_indexer = Indexer()
+    random.shuffle(train_data)
     # {author: Signature}
     authors = {}
     author_results = {}
@@ -52,7 +53,7 @@ def train_baseline(train_data):
         #print("--------------------------------------------------")
         #print("Author: " + author)
         #print(author_results[author])
-    return train_baseline
+    return author_results
 
 def increment_counter(passage, counter):
     for word in passage:
@@ -61,3 +62,26 @@ def increment_counter(passage, counter):
                 counter[word] += 1
             else:
                 counter[word] = 1
+
+def evaluate_baseline(test_data, authors):
+    random.shuffle(test_data)
+    total_examples = len(test_data)
+    correct = 0
+
+    for i in range(len(test_data)):
+        passage = word_tokenize(test_data[i].passage)
+        max_words = 0
+        max_author = ''
+        for author in authors.keys():
+            count = 0
+            for word in passage:
+                if word in authors[author]:
+                    count += 1
+            if count > max_words:
+                max_words = count
+                max_author = author
+        
+        if max_author == test_data[i].author:
+            correct += 1
+
+    print ("Correctness: " + str(correct) + "/" + str(total_examples), "->",correct/total_examples)

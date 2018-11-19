@@ -63,7 +63,7 @@ class GutenbergData:
 
         return self
 
-    def create_dataset(self, passages_per_book=20, passage_length=3, passage_type="paragraph"):
+    def create_dataset(self, passages_per_book=33, passage_length=3, passage_type="paragraph", test_ex = 3):
         """
         Create a dataset from a set of books. Can specify # passages, passage length, passage
         type (sentence / paragraph). Output is a list of Examples.
@@ -72,20 +72,25 @@ class GutenbergData:
         y: list of authors
         """
         examples = []
+        test = []
 
         for book in self.books:
             selected = book.select_passages(n=passages_per_book, length=passage_length, method=passage_type)
             #author = repeat(book.author, len(selected))
 
-            for passage in selected:
-                examples.append(Example(passage, book.author))
+            for i in range(len(selected)):
+                passage = selected[i]
+                if i < passages_per_book-test_ex:
+                    examples.append(Example(passage, book.author))
+                else:
+                    test.append(Example(passage, book.author))
 
-        return examples
+        return examples, test
 
 def gutenberg_dataset(train_path):
     gd = GutenbergData().load_from(train_path)
-    data = gd.create_dataset()
+    train_data, test_data = gd.create_dataset()
     print("Finished loading data")
 
     # TODO: test data splitting
-    return data
+    return train_data, test_data
