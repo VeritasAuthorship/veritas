@@ -1,7 +1,7 @@
 from utils import *
-from veritas import *
 import numpy as np
-from nltk import sent_tokenize, word_tokenize
+from nltk.tokenize import sent_tokenize, word_tokenize
+
 
 '''
 Baseline approach: For each author maintain a list of most used words, that are not present in stopwords
@@ -9,7 +9,7 @@ Construct tensor from this list of words
 '''
 
 # Do not add stopwords
-stopwords = {'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', "don't", 'should', "should've", 'now', 'd', 'll', 'm', 'o', 're', 've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't", 'didn', "didn't", 'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't", 'haven', "haven't", 'isn', "isn't", 'ma', 'mightn', "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', "shan't", 'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't"}
+stopwords = {'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', "don't", 'should', "should've", 'now', 'd', 'll', 'm', 'o', 're', 've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't", 'didn', "didn't", 'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't", 'haven', "haven't", 'isn', "isn't", 'ma', 'mightn', "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', "shan't", 'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't", ',', '.', "''", '``', 'I', ';', 'The', '!', '--', 'old', 'But', "'s", 'And', 'said', '?', "'", ':', '-', "'ll", ')', '(', 'A', 'He', 'he', 'in', 'In', "n't", 'It', '=', 'Mr.', 'O', 'An', 'us'}
 
 class Signature:
     ''' 
@@ -25,12 +25,39 @@ class Signature:
         '''
         Return highest n ranked words from counter
         '''
-
+        # print(sorted(self.counter.values())) # To see counter values
         self.words = sorted(self.counter, key=self.counter.get, reverse=True)[:self.n]
         return self.words
 
 
 def train_baseline(train_data):
     word_indexer = Indexer()
-    
+    # {author: Signature}
+    authors = {}
+    author_results = {}
+
     # Do an initial read of the entire vocabulary to add words to the indexer
+    add_dataset_features(train_data, word_indexer)
+
+    for i in range(len(train_data)):
+        author = train_data[i].author
+        passage = word_tokenize(train_data[i].passage)
+        if author not in authors:
+            authors[author] = Signature(author)
+        increment_counter(passage, authors[author].counter)
+
+    # Print data
+    for author in authors:
+        author_results[author] = authors[author].get_final_words()
+        #print("--------------------------------------------------")
+        #print("Author: " + author)
+        #print(author_results[author])
+    return train_baseline
+
+def increment_counter(passage, counter):
+    for word in passage:
+        if word not in stopwords:
+            if word in counter:
+                counter[word] += 1
+            else:
+                counter[word] = 1
