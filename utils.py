@@ -1,5 +1,6 @@
 # utils.py This file may be used for all utility functions
 from nltk.tokenize import sent_tokenize, word_tokenize
+import numpy as np
 
 '''
  Create a bijection betweeen int and object. May be used for reverse indexing
@@ -40,3 +41,79 @@ def add_dataset_features(feats, feature_indexer):
         l = word_tokenize(feats[i].passage)
         for word in l:
             feature_indexer.get_index(word)
+
+# Below code taken from CS 388 provided code (written by Greg Durrett <email>)
+
+# Wraps an Indexer and a list of 1-D numpy arrays where each position in the list is the vector for the corresponding
+# word in the indexer. The 0 vector is returned if an unknown word is queried.
+class WordEmbeddings:
+    def __init__(self, word_indexer, vectors):
+        self.word_indexer = word_indexer
+        self.vectors = vectors
+
+    def get_embedding(self, word):
+        word_idx = self.word_indexer.get_index(word)
+        if word_idx != -1:
+            return self.vectors[word_idx]
+        else:
+            return self.vectors[word_indexer.get_index("UNK")]
+
+    def get_embedding_idx(self, word_idx):
+        if word_idx != -1:
+            return self.vectors[word_idx]
+        else:
+            return self.vectors[word_indexer.get_index("UNK")]
+
+    def get_average_score(self, word_idx):
+        vec = self.get_embedding_idx(word_idx)
+        return np.average(vec)
+
+
+# Loads the given embeddings (ASCII-formatted) into a WordEmbeddings object. Augments this with an UNK embedding
+# that is the 0 vector. Reads in all embeddings with no filtering -- you should only use this for relativized
+# word embedding files.
+def read_word_embeddings(embeddings_file):
+    f = open(embeddings_file)
+    word_indexer = Indexer()
+    vectors = []
+    for line in f:
+        if line.strip() != "":
+            space_idx = line.find(' ')
+            word = line[:space_idx]
+            numbers = line[space_idx+1:]
+            float_numbers = [float(number_str) for number_str in numbers.split()]
+            #print repr(float_numbers)
+            vector = np.array(float_numbers)
+            word_indexer.get_index(word)
+            vectors.append(vector)
+            #print repr(word) + " : " + repr(vector)
+    f.close()
+    print("Read in " + repr(len(word_indexer)) + " vectors of size " + repr(vectors[0].shape[0]))
+    # Add an UNK token at the end
+    word_indexer.get_index("UNK")
+    vectors.append(np.zeros(vectors[0].shape[0]))
+    # Turn vectors into a 2-D numpy array
+    return WordEmbeddings(word_indexer, np.array(vectors))
+
+
+#################
+# You probably don't need to interact with this code unles you want to relativize other sets of embeddings
+# to this data. Relativization = restrict the embeddings to only have words we actually need in order to save memory
+# (but this requires looking at the data in advance).
+
+# Relativize the word vectors to the training set
+def relativize(file, outfile, indexer):
+    f = open(file)
+    o = open(outfile, 'w')
+    voc = []
+    for line in f:
+        word = line[:line.find(' ')]
+        if indexer.contains(word):
+            print("Keeping word vector for " + word)
+            voc.append(word)
+            o.write(line)
+    for word in indexer.objs_to_ints.keys():
+        if word not in voc:
+            print("Missing " + word)
+    f.close()
+    o.close()
