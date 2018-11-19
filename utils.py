@@ -1,4 +1,5 @@
 # utils.py This file may be used for all utility functions
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 '''
  Create a bijection betweeen int and object. May be used for reverse indexing
@@ -36,4 +37,6 @@ class Indexer(object):
 # If add_to_indexer is false, unseen features will be discarded
 def add_dataset_features(feats, feature_indexer):
     for i in range(len(feats)):
-        feature_indexer.get_index(feats[i][0])
+        l = word_tokenize(feats[i].passage)
+        for word in l:
+            feature_indexer.get_index(word)

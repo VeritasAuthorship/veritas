@@ -63,7 +63,7 @@ class GutenbergData:
 
         return self
 
-    def create_dataset(self, passages_per_book=10, passage_length=3, passage_type="paragraph"):
+    def create_dataset(self, passages_per_book=20, passage_length=3, passage_type="paragraph"):
         """
         Create a dataset from a set of books. Can specify # passages, passage length, passage
         type (sentence / paragraph). Output is a list of Examples.

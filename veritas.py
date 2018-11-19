@@ -7,6 +7,9 @@ import sys
 from utils import *
 from gutenberg_data import *
 
+sys.path.append("./models")
+from baseline import *
+
 # Read in command line arguments to the system
 def arg_parse():
     parser = argparse.ArgumentParser(description='trainer.py')
@@ -25,7 +28,7 @@ if __name__ == "__main__":
         if (args.train_type == 'GUTENBERG'):
             train_data =  gutenberg_dataset(args.train_path)
             print("training")
-            # Implement training
+            train_baseline(train_data)
             print("testing")            
             # Implement testing
 
