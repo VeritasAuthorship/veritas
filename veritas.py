@@ -9,13 +9,24 @@ from gutenberg_data import *
 
 sys.path.append("./models")
 from baseline import *
+from LSTM import *
 
 # Read in command line arguments to the system
 def arg_parse():
     parser = argparse.ArgumentParser(description='trainer.py')
     parser.add_argument('--model', type=str, default='BASELINE', help="Model to run")
     parser.add_argument('--train_type', type=str, default="GUTENBERG", help="Data type - Gutenberg or custom")
-    parser.add_argument('--train_path', type=str, default='data/american/', help='Path to the training set')
+    parser.add_argument('--train_path', type=str, default='data/combined/', help='Path to the training set')
+
+    # Seq-2-Seq args
+    parser.add_argument('--reverse_input', type=bool, default=False)
+    parser.add_argument('--emb_dropout', type=float, default=0.2, help="dropout for embedding layer")
+    parser.add_argument('--rnn_dropout', type=float, default=0.2, help="dropout for RNN")
+    parser.add_argument('--bidirectional', type=bool, default=True, help="lstm birectional or not")
+    parser.add_argument('--hidden_size', type=int, default=200, help='hidden state dimensionality')
+    parser.add_argument('--word_vecs_path_input', type=str, default='data/glove.6B.300d.txt', help='path to word vectors file')
+    parser.add_argument('--word_vecs_path', type=str, default='data/glove.6B.300d-relativized.txt', help='path to word vectors file')
+
     args = parser.parse_args()
     return args
 
@@ -32,8 +43,16 @@ if __name__ == "__main__":
             print("testing")            
             evaluate_baseline(test_data, authors)
 
-    elif args.model == 'ENCDEC':
-        pass
+    elif args.model == 'LSTM':
+        if args.train_type == 'GUTENBERG':
+            train_data, test_data = gutenberg_dataset(args.train_path)
+            word_indexer = Indexer()
+            add_dataset_features(train_data, word_indexer)
+            add_dataset_features(test_data, word_indexer)
+            
+            relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
+            word_vectors = read_word_embeddings(args.word_vecs_path)
+        
     elif args.model == 'VAE':
         pass
 
