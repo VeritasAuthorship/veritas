@@ -70,6 +70,10 @@ class WordEmbeddings:
         return np.average(vec)
 
 
+PAD_SYMBOL = "<PAD>"
+UNK_SYMBOL = "<UNK>"
+
+
 # Loads the given embeddings (ASCII-formatted) into a WordEmbeddings object. Augments this with an UNK embedding
 # that is the 0 vector. Reads in all embeddings with no filtering -- you should only use this for relativized
 # word embedding files.
