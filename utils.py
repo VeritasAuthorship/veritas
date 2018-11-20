@@ -1,6 +1,7 @@
 # utils.py This file may be used for all utility functions
 from nltk.tokenize import sent_tokenize, word_tokenize
 import numpy as np
+from gutenberg_data import *
 
 '''
  Create a bijection betweeen int and object. May be used for reverse indexing
@@ -56,13 +57,13 @@ class WordEmbeddings:
         if word_idx != -1:
             return self.vectors[word_idx]
         else:
-            return self.vectors[word_indexer.get_index("UNK")]
+            return self.vectors[self.word_indexer.get_index(UNK_SYMBOL)]
 
     def get_embedding_idx(self, word_idx):
         if word_idx != -1:
             return self.vectors[word_idx]
         else:
-            return self.vectors[word_indexer.get_index("UNK")]
+            return self.vectors[self.word_indexer.get_index(UNK_SYMBOL)]
 
     def get_average_score(self, word_idx):
         vec = self.get_embedding_idx(word_idx)
@@ -76,6 +77,10 @@ def read_word_embeddings(embeddings_file):
     f = open(embeddings_file)
     word_indexer = Indexer()
     vectors = []
+    # Add PAD token
+    word_indexer.get_index(PAD_SYMBOL)
+    # Add an UNK token
+    word_indexer.get_index(UNK_SYMBOL)
     for line in f:
         if line.strip() != "":
             space_idx = line.find(' ')
@@ -89,8 +94,6 @@ def read_word_embeddings(embeddings_file):
             #print repr(word) + " : " + repr(vector)
     f.close()
     print("Read in " + repr(len(word_indexer)) + " vectors of size " + repr(vectors[0].shape[0]))
-    # Add an UNK token at the end
-    word_indexer.get_index("UNK")
     vectors.append(np.zeros(vectors[0].shape[0]))
     # Turn vectors into a 2-D numpy array
     return WordEmbeddings(word_indexer, np.array(vectors))
@@ -106,6 +109,7 @@ def relativize(file, outfile, indexer):
     f = open(file)
     o = open(outfile, 'w')
     voc = []
+    
     for line in f:
         word = line[:line.find(' ')]
         if indexer.contains(word):
@@ -117,3 +121,13 @@ def relativize(file, outfile, indexer):
             print("Missing " + word)
     f.close()
     o.close()
+
+# Takes the given Examples and their input indexer and turns them into a numpy array by padding them out to max_len.
+# Optionally reverses them.
+def make_padded_input_tensor(exs, input_indexer, max_len):
+    result = []
+    for ex in exs:
+        passage = word_tokenize(ex.passage)
+        result.append([input_indexer.index_of(PAD_SYMBOL) if i >= len(passage) else input_indexer.index_of(UNK_SYMBOL) if input_indexer.index_of(passage[i])==-1 else input_indexer.index_of(passage[i])
+                        for i in range(0, max_len)])
+    return np.array(result)

@@ -52,7 +52,11 @@ if __name__ == "__main__":
             
             relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
             word_vectors = read_word_embeddings(args.word_vecs_path)
-        
+
+            print("Finished extracting embeddings")
+            print("training")
+            train_lstm_model(train_data, test_data, word_vectors, args)
+
     elif args.model == 'VAE':
         pass
 
