@@ -1,9 +1,6 @@
-from itertools import repeat
-
 import os
 import random
-import string
-from nltk import sent_tokenize, word_tokenize
+from nltk import sent_tokenize
 
 
 def _gutenberg_filename(author, title):

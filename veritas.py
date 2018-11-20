@@ -7,9 +7,9 @@ import sys
 from utils import *
 from gutenberg_data import *
 
-sys.path.append("./models")
-from baseline import *
-from LSTM import *
+# sys.path.append("./models")
+from models.baseline import *
+from models.LSTM import *
 
 # Read in command line arguments to the system
 def arg_parse():
