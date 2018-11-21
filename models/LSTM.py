@@ -3,6 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import random
 from torch.autograd import Variable as Var
+from torch.optim import Adam
+from torch.utils.data import DataLoader, TensorDataset
+
 from utils import *
 import numpy as np
 
@@ -15,7 +18,7 @@ class EmbeddingLayer(nn.Module):
     def __init__(self, word_vectors, embedding_dropout_rate):
         super(EmbeddingLayer, self).__init__()
         self.dropout = nn.Dropout(embedding_dropout_rate)
-        self.word_embedding = nn.Embedding.from_pretrained(torch.from_numpy(word_vectors.vectors).float(),False)
+        self.word_embedding = nn.Embedding.from_pretrained(torch.from_numpy(word_vectors.vectors).float(), False)
 
     # Takes either a non-batched input [sent len x input_dim] or a batched input
     # [batch size x sent len x input dim]
@@ -24,12 +27,13 @@ class EmbeddingLayer(nn.Module):
         final_embeddings = self.dropout(embedded_words)
         return final_embeddings
 
+
 # One-layer RNN encoder for batched inputs -- handles multiple sentences at once. You're free to call it with a
 # leading dimension of 1 (batch size 1) but it does expect this dimension.
 class RNNEncoder(nn.Module):
     # Parameters: input size (should match embedding layer), hidden size for the LSTM, dropout rate for the RNN,
     # and a boolean flag for whether or not we're using a bidirectional encoder
-    def __init__(self, input_size, hidden_size, output_size, dropout, bidirect, word_vectors):
+    def __init__(self, input_size, hidden_size, output_size, word_vectors, dropout=0.2, bidirect=False):
         super(RNNEncoder, self).__init__()
         self.bidirect = bidirect
         self.input_size = input_size
@@ -38,8 +42,8 @@ class RNNEncoder(nn.Module):
         self.reduce_h_W = nn.Linear(hidden_size * 2, hidden_size, bias=True)
         self.reduce_c_W = nn.Linear(hidden_size * 2, hidden_size, bias=True)
         self.rnn = nn.LSTM(input_size, hidden_size, num_layers=1, batch_first=True,
-                               dropout=dropout, bidirectional=self.bidirect)
-        
+                           dropout=dropout, bidirectional=self.bidirect)
+
         self.hiddenToLabel = nn.Linear(hidden_size, self.output_size)
         self.init_weight()
 
@@ -61,7 +65,8 @@ class RNNEncoder(nn.Module):
         return self.hidden_size * 2 if self.bidirect else self.hidden_size
 
     def sent_lens_to_mask(self, lens, max_length):
-        return torch.from_numpy(np.asarray([[1 if j < lens.data[i].item() else 0 for j in range(0, max_length)] for i in range(0, lens.shape[0])]))
+        return torch.from_numpy(np.asarray(
+            [[1 if j < lens.data[i].item() else 0 for j in range(0, max_length)] for i in range(0, lens.shape[0])]))
 
     # embedded_words should be a [batch size x sent len x input dim] tensor
     # input_lens is a tensor containing the length of each input sentence
@@ -96,10 +101,10 @@ class RNNEncoder(nn.Module):
         labels = self.hidden2Label(h_t[0])
         probs = F.log_softmax(labels[0], dim=0)
         return (probs, h_t)
-        
+
 
 class LSTMTrainedModel(object):
-    def __init__(self, model, model_emb, indexer,args):
+    def __init__(self, model, model_emb, indexer, args):
         # Add any args you need here
         self.model = model
         self.model_emb = model_emb
@@ -107,19 +112,72 @@ class LSTMTrainedModel(object):
         self.args = args
 
 
-def train_lstm_model(train_data, test_data, word_vectors, args):
+def train_lstm_model(train_data, test_data, authors, word_embeddings, args):
     train_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
-    word_indexer = word_vectors.word_indexer
+    word_indexer = word_embeddings.word_indexer
 
     print(word_indexer.index_of(PAD_SYMBOL))
-    # Create indexed input
-    input_max_len = np.max(np.asarray([len(word_tokenize(ex.passage)) for ex in train_data]))
-    all_train_input_data = make_padded_input_tensor(train_data, word_indexer, input_max_len)
-    print(all_train_input_data)
 
-    
-    #print(np.sum(np.sum(all_train_input_data==1))/(len(all_train_input_data)*len(all_train_input_data[0])))
+    # Create indexed input
+    print("creating indexed input")
+    input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in train_data])).unsqueeze(0)
+    input_max_len = torch.max(input_lens, dim=1)[0].item()
+    # input_max_len = np.max(np.asarray([len(word_tokenize(ex.passage)) for ex in train_data]))
+    print("train input")
+    all_train_input_data = torch.LongTensor(make_padded_input_tensor(train_data, word_indexer, input_max_len)).unsqueeze(0)
+    print("train output")
+    all_train_output_data = torch.LongTensor(np.asarray([authors.index_of(ex.author) for ex in train_data])).unsqueeze(0)
+
+    print(input_lens.shape)
+    print(all_train_input_data.shape)
+    print(all_train_output_data.shape)
+
+    train_batch_loader = DataLoader(
+        TensorDataset(
+            all_train_input_data,
+            all_train_output_data,
+            input_lens
+        ), batch_size=args.batch_size, shuffle=True
+    )
+
+    input_size = input_max_len
+    hidden_size = 25
+    output_size = len(authors)
+
+    encoder = RNNEncoder(input_size, hidden_size, output_size, word_embeddings)
+    enc_optimizer = Adam(encoder.parameters())
+
+    loss_function = nn.NLLLoss()
+    num_epochs = 5
+
+    for epoch in range(num_epochs):
+
+        epoch_loss = 0
+
+        for X_batch, y_batch, input_lens_batch in train_batch_loader:
+            enc_optimizer.zero_grad()
+            encoder.init_weight()
+
+            print(X_batch.shape, y_batch.shape, input_lens_batch.shape)
+
+            embedded_words = word_embeddings(X_batch)
+            probs = encoder.forward(embedded_words, input_lens_batch)
+            loss = loss_function(torch.unsqueeze(probs[-1], 0), y_batch)
+
+        # for ex_idx in ex_indices:
+        #     X = torch.from_numpy(all_train_input_data[ex_idx])
+        #     y = torch.LongTensor([all_train_output_data[ex_idx]])
+        #
+        #     enc_optimizer.zero_grad()
+        #     encoder.init_weight()
+        #
+        #     probs = encoder.forward(X, input_lens)
+        #     category = torch.LongTensor([y])
+        #
+        #     loss = loss_function(torch.unsqueeze(probs[-1], 0), category)
+        #
+        #     loss.backward()
+        #     epoch_loss += loss
+        #     enc_optimizer.step()
 
     raise Exception('sdf')
-
-
