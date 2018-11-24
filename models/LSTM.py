@@ -33,7 +33,7 @@ class EmbeddingLayer(nn.Module):
 class RNNEncoder(nn.Module):
     # Parameters: input size (should match embedding layer), hidden size for the LSTM, dropout rate for the RNN,
     # and a boolean flag for whether or not we're using a bidirectional encoder
-    def __init__(self, input_size, hidden_size, output_size, word_vectors, dropout=0.2, bidirect=False):
+    def __init__(self, input_size, hidden_size, output_size, word_vectors, dropout, bidirect=False):
         super(RNNEncoder, self).__init__()
         self.bidirect = bidirect
         self.input_size = input_size
@@ -112,9 +112,9 @@ class LSTMTrainedModel(object):
         self.args = args
 
 
-def train_lstm_model(train_data, test_data, authors, word_embeddings, args):
+def train_lstm_model(train_data, test_data, authors, word_vectors, args):
     train_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
-    word_indexer = word_embeddings.word_indexer
+    word_indexer = word_vectors.word_indexer
 
     print(word_indexer.index_of(PAD_SYMBOL))
 
@@ -144,7 +144,9 @@ def train_lstm_model(train_data, test_data, authors, word_embeddings, args):
     hidden_size = 25
     output_size = len(authors)
 
-    encoder = RNNEncoder(input_size, hidden_size, output_size, word_embeddings)
+    encoder = RNNEncoder(input_size, hidden_size, output_size, word_vectors, args.rnn_dropout)
+    model_emb = EmbeddingLayer(word_vectors, args.emb_dropout)
+
     enc_optimizer = Adam(encoder.parameters())
 
     loss_function = nn.NLLLoss()
@@ -161,7 +163,11 @@ def train_lstm_model(train_data, test_data, authors, word_embeddings, args):
             print(X_batch.shape, y_batch.shape, input_lens_batch.shape)
 
             embedded_words = word_embeddings(X_batch)
-            probs = encoder.forward(embedded_words, input_lens_batch)
+            print("EMBEDDINGS")
+            print(embedded_words.shape)
+            probs, hidden = encoder.forward(embedded_words, input_lens_batch)
+            print("PROBS")
+            print(probs.shape)
             loss = loss_function(torch.unsqueeze(probs[-1], 0), y_batch)
 
         # for ex_idx in ex_indices:
