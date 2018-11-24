@@ -120,18 +120,16 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
 
     # Create indexed input
     print("creating indexed input")
-    input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in train_data])).unsqueeze(0)
-    input_max_len = torch.max(input_lens, dim=1)[0].item()
+    input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in train_data]))
+    input_max_len = torch.max(input_lens, dim=0)[0].item()
     # input_max_len = np.max(np.asarray([len(word_tokenize(ex.passage)) for ex in train_data]))
     print("train input")
-    all_train_input_data = torch.LongTensor(make_padded_input_tensor(train_data, word_indexer, input_max_len)).unsqueeze(0)
+    all_train_input_data = torch.LongTensor(make_padded_input_tensor(train_data, word_indexer, input_max_len))
     print("train output")
-    all_train_output_data = torch.LongTensor(np.asarray([authors.index_of(ex.author) for ex in train_data])).unsqueeze(0)
+    all_train_output_data = torch.LongTensor(np.asarray([authors.index_of(ex.author) for ex in train_data]))
 
-    print(input_lens.shape)
-    print(all_train_input_data.shape)
-    print(all_train_output_data.shape)
-
+    # DataLoader constructs each batch from the given data
+    '''
     train_batch_loader = DataLoader(
         TensorDataset(
             all_train_input_data,
@@ -139,15 +137,17 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
             input_lens
         ), batch_size=args.batch_size, shuffle=True
     )
+    '''
 
     input_size = input_max_len
-    hidden_size = 25
     output_size = len(authors)
 
-    encoder = RNNEncoder(input_size, hidden_size, output_size, word_vectors, args.rnn_dropout)
     model_emb = EmbeddingLayer(word_vectors, args.emb_dropout)
+    encoder = RNNEncoder(input_size, args.hidden_size, output_size, word_vectors, args.rnn_dropout)
 
-    enc_optimizer = Adam(encoder.parameters())
+    # Construct optimizer. Using Adam optimizer
+    params = list(encoder.parameters()) + list(model_emb.parameters())
+    optimizer = Adam(params)
 
     loss_function = nn.NLLLoss()
     num_epochs = 5
@@ -156,13 +156,15 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
 
         epoch_loss = 0
 
-        for X_batch, y_batch, input_lens_batch in train_batch_loader:
-            enc_optimizer.zero_grad()
+        #for X_batch, y_batch, input_lens_batch in train_batch_loader:
+        for idx, X_batch in enumerate(all_train_input_data):
+            y_batch = all_train_output_data[idx].unsqueeze(0)
+            input_lens_batch = input_lens[idx].unsqueeze(0)
+            print(X_batch.shape, y_batch.shape, input_lens_batch.shape)
+            optimizer.zero_grad()
             encoder.init_weight()
 
-            print(X_batch.shape, y_batch.shape, input_lens_batch.shape)
-
-            embedded_words = word_embeddings(X_batch)
+            embedded_words = model_emb.forward(X_batch.unsqueeze(0))
             print("EMBEDDINGS")
             print(embedded_words.shape)
             probs, hidden = encoder.forward(embedded_words, input_lens_batch)
