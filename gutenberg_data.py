@@ -43,7 +43,6 @@ class GutenbergBook:
                 passage = " ".join(seq[start:start + length])
 
             assert len(passage) >= min_char_length
-            print(passage)
             return passage
 
         return [_single_passage(sequence, length) for _ in range(n)]

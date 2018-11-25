@@ -57,7 +57,10 @@ if __name__ == "__main__":
 
             print("Finished extracting embeddings")
             print("training")
-            train_lstm_model(train_data, test_data, authors, word_vectors, args)
+            trained_model = train_lstm_model(train_data, test_data, authors, word_vectors, args)
+
+            print("testing")
+            trained_model.evaluate(test_data)
 
     elif args.model == 'VAE':
         pass
