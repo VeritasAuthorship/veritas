@@ -23,7 +23,11 @@ class EmbeddingLayer(nn.Module):
     # Takes either a non-batched input [sent len x input_dim] or a batched input
     # [batch size x sent len x input dim]
     def forward(self, input):
-        embedded_words = self.word_embedding(input)
+        try:
+            embedded_words = self.word_embedding(input)
+        except:
+            for i in input:
+                print(i)
         final_embeddings = self.dropout(embedded_words)
         return final_embeddings
 
@@ -98,7 +102,7 @@ class RNNEncoder(nn.Module):
             h_t = (h, c)
 
         print(h_t[0].shape)
-        labels = self.hidden2Label(h_t[0])
+        labels = self.hiddenToLabel(h_t[0])
         probs = F.log_softmax(labels[0], dim=0)
         return (probs, h_t)
 
@@ -138,8 +142,7 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
         ), batch_size=args.batch_size, shuffle=True
     )
     '''
-
-    input_size = input_max_len
+    input_size = args.embedding_size
     output_size = len(authors)
 
     model_emb = EmbeddingLayer(word_vectors, args.emb_dropout)
@@ -158,19 +161,25 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
 
         #for X_batch, y_batch, input_lens_batch in train_batch_loader:
         for idx, X_batch in enumerate(all_train_input_data):
+            if idx % 100 == 0:
+                print("Example ", idx, "out of ", len(all_train_input_data))
             y_batch = all_train_output_data[idx].unsqueeze(0)
             input_lens_batch = input_lens[idx].unsqueeze(0)
-            print(X_batch.shape, y_batch.shape, input_lens_batch.shape)
             optimizer.zero_grad()
             encoder.init_weight()
 
             embedded_words = model_emb.forward(X_batch.unsqueeze(0))
-            print("EMBEDDINGS")
-            print(embedded_words.shape)
+            
+            # Get probability and hidden state
             probs, hidden = encoder.forward(embedded_words, input_lens_batch)
-            print("PROBS")
-            print(probs.shape)
-            loss = loss_function(torch.unsqueeze(probs[-1], 0), y_batch)
+            loss = loss_function(probs.unsqueeze(0), y_batch)
+            epoch_loss += loss
+
+            # Run backward
+            loss.backward()
+            optimizer.step()
+        
+        print("Epoch Loss:", epoch_loss)
 
         # for ex_idx in ex_indices:
         #     X = torch.from_numpy(all_train_input_data[ex_idx])
@@ -187,5 +196,3 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
         #     loss.backward()
         #     epoch_loss += loss
         #     enc_optimizer.step()
-
-    raise Exception('sdf')

@@ -27,6 +27,7 @@ def arg_parse():
     parser.add_argument('--hidden_size', type=int, default=200, help='hidden state dimensionality')
     parser.add_argument('--word_vecs_path_input', type=str, default='data/glove.6B.300d.txt', help='path to word vectors file')
     parser.add_argument('--word_vecs_path', type=str, default='data/glove.6B.300d-relativized.txt', help='path to word vectors file')
+    parser.add_argument('--embedding_size', type=int, default=300, help='Embedding size')
 
     args = parser.parse_args()
     return args
