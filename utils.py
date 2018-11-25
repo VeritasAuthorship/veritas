@@ -84,10 +84,6 @@ def read_word_embeddings(embeddings_file):
     f = open(embeddings_file)
     word_indexer = Indexer()
     vectors = []
-    # Add PAD token
-    word_indexer.get_index(PAD_SYMBOL)
-    # Add an UNK token
-    word_indexer.get_index(UNK_SYMBOL)
     for line in f:
         if line.strip() != "":
             space_idx = line.find(' ')
@@ -99,9 +95,15 @@ def read_word_embeddings(embeddings_file):
             word_indexer.get_index(word)
             vectors.append(vector)
             # print repr(word) + " : " + repr(vector)
+    # Add PAD token
+    word_indexer.get_index(PAD_SYMBOL)
+    vectors.append(np.zeros(vectors[0].shape[0]))
+    # Add an UNK token
+    word_indexer.get_index(UNK_SYMBOL)
+    vectors.append(np.zeros(vectors[0].shape[0]))
+
     f.close()
     print("Read in " + repr(len(word_indexer)) + " vectors of size " + repr(vectors[0].shape[0]))
-    vectors.append(np.zeros(vectors[0].shape[0]))
     # Turn vectors into a 2-D numpy array
     return WordEmbeddings(word_indexer, np.array(vectors))
 

@@ -16,7 +16,7 @@ def arg_parse():
     parser = argparse.ArgumentParser(description='trainer.py')
     parser.add_argument('--model', type=str, default='BASELINE', help="Model to run")
     parser.add_argument('--train_type', type=str, default="GUTENBERG", help="Data type - Gutenberg or custom")
-    parser.add_argument('--train_path', type=str, default='data/combined/', help='Path to the training set')
+    parser.add_argument('--train_path', type=str, default='data/american/', help='Path to the training set')
 
     # Seq-2-Seq args
     parser.add_argument('--reverse_input', type=bool, default=False)
