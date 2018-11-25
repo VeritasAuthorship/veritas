@@ -20,7 +20,7 @@ class GutenbergBook:
         self.title = title
         self.text = text
 
-    def select_passages(self, n, length, method):
+    def select_passages(self, n, length, method, min_char_length=500):
         """
         Select n passages at random from a book, either by paragraph
         or by sentence.
@@ -37,8 +37,14 @@ class GutenbergBook:
         assert length < len(sequence)
 
         def _single_passage(seq, length):
-            start = random.randrange(0, len(seq) - length)
-            return " ".join(seq[start:start + length])
+            passage = ""
+            while len(passage) < min_char_length:
+                start = random.randrange(0, len(seq) - length)
+                passage = " ".join(seq[start:start + length])
+
+            assert len(passage) >= min_char_length
+            print(passage)
+            return passage
 
         return [_single_passage(sequence, length) for _ in range(n)]
 
@@ -97,3 +103,6 @@ def gutenberg_dataset(train_path):
 
     # TODO: test data splitting
     return train_data, test_data, num_authors
+
+if __name__ == '__main__':
+    gutenberg_dataset("data/combined")
