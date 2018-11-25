@@ -9,6 +9,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from utils import *
 import numpy as np
 
+# Run on gpu is present
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # Embedding layer that has a lookup table of symbols that is [full_dict_size x input_dim]. Includes dropout.
 # Works for both non-batched and batched inputs
@@ -129,10 +131,10 @@ class LSTMTrainedModel(object):
         total = len(all_test_input_data)
         for idx, X_batch in enumerate(all_test_input_data):
             y_batch = all_test_output_data[idx].unsqueeze(0)
-            input_lens_batch = input_lens[idx].unsqueeze(0)
+            input_lens_batch = input_lens[idx].unsqueeze(0).to(device)
 
             # Get word embeddings
-            embedded_words = self.model_emb.forward(X_batch.unsqueeze(0))
+            embedded_words = self.model_emb.forward(X_batch.unsqueeze(0).to(device)).to(device)
             
             # Get probability and hidden state
             probs, hidden = self.model.forward(embedded_words, input_lens_batch)
@@ -169,8 +171,8 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
     input_size = args.embedding_size
     output_size = len(authors)
 
-    model_emb = EmbeddingLayer(word_vectors, args.emb_dropout)
-    encoder = RNNEncoder(input_size, args.hidden_size, output_size, word_vectors, args.rnn_dropout)
+    model_emb = EmbeddingLayer(word_vectors, args.emb_dropout).to(device)
+    encoder = RNNEncoder(input_size, args.hidden_size, output_size, word_vectors, args.rnn_dropout).to(device)
 
     # Construct optimizer. Using Adam optimizer
     params = list(encoder.parameters()) + list(model_emb.parameters())
@@ -189,13 +191,13 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
             if idx % 100 == 0:
                 print("Example", idx, "out of", len(all_train_input_data))
             y_batch = all_train_output_data[idx].unsqueeze(0)
-            input_lens_batch = input_lens[idx].unsqueeze(0)
+            input_lens_batch = input_lens[idx].unsqueeze(0).to(device)
 
             # Initialize optimizer
             optimizer.zero_grad()
 
             # Get word embeddings
-            embedded_words = model_emb.forward(X_batch.unsqueeze(0))
+            embedded_words = model_emb.forward(X_batch.unsqueeze(0).to(device)).to(device)
             
             # Get probability and hidden state
             probs, hidden = encoder.forward(embedded_words, input_lens_batch)
