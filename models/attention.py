@@ -2,9 +2,13 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.functional as F
+from nltk import word_tokenize
 from torch.optim import Adam
 
 from models.LSTM import RNNEncoder, EmbeddingLayer, LSTMTrainedModel
+from utils import make_padded_input_tensor
+
+SOS_SYMBOL = "<SOS>"
 
 class RNNEncoder(nn.Module):
     # Parameters: input size (should match embedding layer), hidden size for the LSTM, dropout rate for the RNN,
@@ -74,7 +78,6 @@ class RNNEncoder(nn.Module):
         return (output, context_mask, h_t)
 
 
-
 class AttentionRNNDecoder(nn.Module):
 
     def __init__(self, hidden_size, embedding_dim, output_size, max_length, args):
@@ -110,29 +113,55 @@ class AttentionRNNDecoder(nn.Module):
         return output, hidden
 
 
-
-def encode_input_for_decoder(x_tensor, inp_lens_tensor, model_input_emb, model_enc):
+def _run_encoder(x_tensor, inp_lens_tensor, model_input_emb, model_enc):
     input_emb = model_input_emb.forward(x_tensor)
-    (enc_output_each_word, enc_context_mask, enc_final_states) = model_enc.forward(input_emb, inp_lens_tensor)
-    enc_final_states_reshaped = (enc_final_states[0].unsqueeze(0), enc_final_states[1].unsqueeze(0))
-    return (enc_output_each_word, enc_context_mask, enc_final_states_reshaped)
+    enc_output_each_word, enc_context_mask, enc_final_states = model_enc.forward(input_emb, inp_lens_tensor)
+    enc_final_states_reshaped = enc_final_states[0].unsqueeze(0), enc_final_states[1].unsqueeze(0)
+    return enc_output_each_word, enc_context_mask, enc_final_states_reshaped
 
 
+def _run_decoder(decoder, enc_output_each_word, enc_hidden, output_tensor,
+                 loss_function, output_indexer, model_output_emb):
 
-def example(input_tensor, output_tensor, input_lens_tensor,
-            encoder, decoder, model_input_emb, model_output_emb,
-            optimizers, loss_function, input_indexer, output_indexer):
+    decoder_input = torch.tensor([[output_indexer.index_of(SOS_SYMBOL)]])
+    decoder_hidden = enc_hidden
 
+    # run decoder, only once to get author classification
+    token_embedding = model_output_emb.forward(decoder_input)
+    decoder_output, decoder_hidden = decoder.forward(token_embedding, decoder_hidden, enc_output_each_word)
+
+    # loss w.r.t. true author
+    loss = loss_function(decoder_output, output_tensor)
+
+    predicted = torch.argmax(decoder_output)
+
+    return predicted, loss
+
+
+def _example(input_tensor, output_tensor, input_lens_tensor,
+             encoder, decoder, model_input_emb, model_output_emb,
+             optimizers, loss_function, input_indexer, output_indexer):
     # Run encoder
+    enc_output_each_word, enc_context_mask, enc_hidden = \
+        _run_encoder(input_tensor, input_lens_tensor, model_input_emb, encoder)
+
+    # zero grad
+    for opt in optimizers:
+        opt.zero_grad()
 
     # Run decoder, get loss
+    prediction, loss = _run_decoder(decoder, enc_output_each_word, enc_hidden, output_tensor,
+                        loss_function, output_indexer, model_output_emb)
 
-    # loss backward
+    loss.backward()
 
-    # optimizer step
+    for opt in optimizers:
+        opt.step()
+
+    return loss.item()
 
 
-def train_lstm_model(train_data, test_data, authors, word_vectors, args):
+def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
     train_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
     word_indexer = word_vectors.word_indexer
 
@@ -174,7 +203,7 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
 
         epoch_loss = 0
 
-        #for X_batch, y_batch, input_lens_batch in train_batch_loader:
+        # for X_batch, y_batch, input_lens_batch in train_batch_loader:
         for idx, X_batch in enumerate(all_train_input_data):
             if idx % 100 == 0:
                 print("Example", idx, "out of", len(all_train_input_data))
@@ -189,8 +218,8 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
 
             # Get probability and hidden state
             probs, hidden = encoder.forward(embedded_words, input_lens_batch)
-            #print(probs)
-            #print("Predicted", torch.argmax(probs,0), "|| Actual" ,y_batch)
+            # print(probs)
+            # print("Predicted", torch.argmax(probs,0), "|| Actual" ,y_batch)
             loss = loss_function(probs.unsqueeze(0), y_batch)
             epoch_loss += loss
 
