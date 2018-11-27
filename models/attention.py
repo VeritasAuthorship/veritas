@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import torch.nn as nn
-import torch.functional as F
+import torch.nn.functional as F
 from nltk import word_tokenize
 from torch.optim import Adam
 
@@ -265,14 +265,15 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
 
     # DataLoader constructs each batch from the given data
     input_size = args.embedding_size
-    output_size = len(authors)
 
     output_indexer = authors
+    output_indexer.get_index(SOS_SYMBOL, True)
+    output_size = len(authors) # TODO: this or + 1?
 
     input_emb = EmbeddingLayer(word_vectors, args.emb_dropout)
-    encoder = AttentionRNNEncoder(input_size, args.hidden_size, args.rnn_dropout, args.bidirect)
+    encoder = AttentionRNNEncoder(input_size, args.hidden_size, args.rnn_dropout, args.bidirectional)
     output_emb = RawEmbeddingLayer(100, len(output_indexer), 0.1)
-    decoder = AttentionRNNDecoder(args.hidden_size, 100, output_size, 1, args)
+    decoder = AttentionRNNDecoder(args.hidden_size, 100, output_size, input_max_len, args)
 
     # Construct optimizer. Using Adam optimizer
     params = list(encoder.parameters()) + list(input_emb.parameters()) \
@@ -289,8 +290,9 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
 
         # for X_batch, y_batch, input_lens_batch in train_batch_loader:
         for idx, X_batch in enumerate(all_train_input_data):
-            if idx % 100 == 0:
+            if idx % 10 == 0:
                 print("Example", idx, "out of", len(all_train_input_data))
+            X_batch = X_batch.unsqueeze(0)
             y_batch = all_train_output_data[idx].unsqueeze(0)
             input_lens_batch = input_lens[idx].unsqueeze(0)
 
@@ -300,4 +302,4 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
 
         print("Epoch Loss:", epoch_loss)
 
-    return EncDecTrainedModel(encoder, input_emb, word_indexer, authors, args)
+    return EncDecTrainedModel(encoder, input_emb, word_indexer, word_indexer, authors, args)
