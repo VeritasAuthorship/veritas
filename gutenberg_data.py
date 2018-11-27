@@ -20,7 +20,7 @@ class GutenbergBook:
         self.title = title
         self.text = text
 
-    def select_passages(self, n, length, method, min_char_length=500):
+    def select_passages(self, n, length, method, min_char_length=50, max_char_length=500):
         """
         Select n passages at random from a book, either by paragraph
         or by sentence.
@@ -38,7 +38,7 @@ class GutenbergBook:
 
         def _single_passage(seq, length):
             passage = ""
-            while len(passage) < min_char_length:
+            while len(passage) < min_char_length or len(passage) > max_char_length:
                 start = random.randrange(0, len(seq) - length)
                 passage = " ".join(seq[start:start + length])
 
@@ -68,7 +68,7 @@ class GutenbergData:
 
         return self
 
-    def create_dataset(self, passages_per_book=53, passage_length=3, passage_type="paragraph", test_ex=3):
+    def create_dataset(self, passages_per_book=10, passage_length=3, passage_type="sentence", test_ex=3):
         """
         Create a dataset from a set of books. Can specify # passages, passage length, passage
         type (sentence / paragraph). Output is a list of Examples.
