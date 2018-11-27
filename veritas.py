@@ -4,6 +4,8 @@
 
 import argparse
 import sys
+
+from models.attention import train_enc_dec_model
 from utils import *
 from gutenberg_data import *
 
@@ -58,6 +60,23 @@ if __name__ == "__main__":
             print("Finished extracting embeddings")
             print("training")
             trained_model = train_lstm_model(train_data, test_data, authors, word_vectors, args)
+
+            print("testing")
+            trained_model.evaluate(test_data)
+
+    elif args.model == "LSTM_ATTN":
+        if args.train_type == 'GUTENBERG':
+            train_data, test_data, authors = gutenberg_dataset(args.train_path)
+            word_indexer = Indexer()
+            add_dataset_features(train_data, word_indexer)
+            add_dataset_features(test_data, word_indexer)
+
+            relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
+            word_vectors = read_word_embeddings(args.word_vecs_path)
+
+            print("Finished extracting embeddings")
+            print("training")
+            trained_model = train_enc_dec_model(train_data, test_data, authors, word_vectors, args)
 
             print("testing")
             trained_model.evaluate(test_data)
