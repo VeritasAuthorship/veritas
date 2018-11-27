@@ -42,7 +42,7 @@ class EmbeddingLayer(nn.Module):
 class RNNEncoder(nn.Module):
     # Parameters: input size (should match embedding layer), hidden size for the LSTM, dropout rate for the RNN,
     # and a boolean flag for whether or not we're using a bidirectional encoder
-    def __init__(self, input_size, hidden_size, output_size, word_vectors, dropout, bidirect=False):
+    def __init__(self, input_size, hidden_size, output_size, word_vectors, dropout, bidirect=True):
         super(RNNEncoder, self).__init__()
         self.bidirect = bidirect
         self.input_size = input_size
@@ -110,6 +110,15 @@ class RNNEncoder(nn.Module):
         return (probs, h_t)
 
 
+# American authors
+# Average accuracy: .416 with 10 passages/book/author, 4 authors
+# Average accuracy: .583 with 30 passages/book/author, 4 authors
+# Average accuracy: .675 with 50 passages/book/author, 4 authors
+
+# Combined authors
+# Average accuracy: .264 with 10 passages/book/author, 9 authors
+# Average accuracy: .2745 with 30 passages/book/author, 9 authors
+
 class LSTMTrainedModel(object):
     def __init__(self, model, model_emb, indexer, authors, args):
         # Add any args you need here
@@ -122,24 +131,30 @@ class LSTMTrainedModel(object):
     def evaluate(self, test_data):
         test_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
 
-        input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in test_data]))
-        input_max_len = torch.max(input_lens, dim=0)[0].item()
-        all_test_input_data = torch.LongTensor(make_padded_input_tensor(test_data, self.word_indexer, input_max_len))
-        all_test_output_data = torch.LongTensor(np.asarray([self.authors.index_of(ex.author) for ex in test_data]))
+        with torch.no_grad():
+            self.model.eval()
+            self.model_emb.eval()
+            input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in test_data]))
+            input_max_len = torch.max(input_lens, dim=0)[0].item()
+            all_test_input_data = torch.LongTensor(make_padded_input_tensor(test_data, self.word_indexer, input_max_len))
+            all_test_output_data = torch.LongTensor(np.asarray([self.authors.index_of(ex.author) for ex in test_data]))
 
-        correct = 0        
-        total = len(all_test_input_data)
-        for idx, X_batch in enumerate(all_test_input_data):
-            y_batch = all_test_output_data[idx].unsqueeze(0)
-            input_lens_batch = input_lens[idx].unsqueeze(0).to(device)
+            correct = 0        
+            total = len(all_test_input_data)
+            for idx, X_batch in enumerate(all_test_input_data):
+                print(X_batch)
+                y_batch = all_test_output_data[idx].unsqueeze(0)
+                print(y_batch)
+                input_lens_batch = input_lens[idx].unsqueeze(0).to(device)
 
-            # Get word embeddings
-            embedded_words = self.model_emb.forward(X_batch.unsqueeze(0).to(device)).to(device)
-            
-            # Get probability and hidden state
-            probs, hidden = self.model.forward(embedded_words, input_lens_batch)
-            if torch.argmax(probs).item() == y_batch[0].item():
-                correct += 1
+                # Get word embeddings
+                embedded_words = self.model_emb.forward(X_batch.unsqueeze(0).to(device)).to(device)
+                
+                # Get probability and hidden state
+                probs, hidden = self.model.forward(embedded_words, input_lens_batch)
+                print(probs, max(probs))
+                if torch.argmax(probs).item() == y_batch[0].item():
+                    correct += 1
 
         print("Correctness", str(correct) + "/" + str(total) + ": " + str(round(correct/total, 5)))
 
@@ -176,14 +191,17 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
 
     # Construct optimizer. Using Adam optimizer
     params = list(encoder.parameters()) + list(model_emb.parameters())
-    lr = 1e-3
+    lr = 1e-4
     optimizer = Adam(params, lr=lr)
 
     loss_function = nn.NLLLoss()
-    num_epochs = 10
+    num_epochs = 15
+
+    encoder.train()
+    model_emb.train()
 
     for epoch in range(num_epochs):
-        
+
         epoch_loss = 0
 
         #for X_batch, y_batch, input_lens_batch in train_batch_loader:
