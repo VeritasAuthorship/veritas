@@ -216,7 +216,7 @@ def _example(input_tensor, output_tensor, input_lens_tensor,
 
 
 class EncDecTrainedModel(object):
-    def __init__(self, encoder, input_emb, decoder, output_emb, input_indexer, output_indexer, args):
+    def __init__(self, encoder, input_emb, decoder, output_emb, input_indexer, output_indexer, args, max_len):
         # Add any args you need here
         self.encoder = encoder
         self.decoder = decoder
@@ -225,19 +225,21 @@ class EncDecTrainedModel(object):
         self.input_indexer = input_indexer
         self.output_indexer = output_indexer
         self.args = args
+        self.max_len = max_len
 
     def evaluate(self, test_data):
         test_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
 
         input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in test_data]))
-        input_max_len = torch.max(input_lens, dim=0)[0].item()
-        all_test_input_data = torch.LongTensor(make_padded_input_tensor(test_data, self.input_indexer, input_max_len))
+        # input_max_len = torch.max(input_lens, dim=0)[0].item()
+        all_test_input_data = torch.LongTensor(make_padded_input_tensor(test_data, self.input_indexer, self.max_len))
         all_test_output_data = torch.LongTensor(
             np.asarray([self.output_indexer.index_of(ex.author) for ex in test_data]))
 
         correct = 0
         total = len(all_test_input_data)
         for idx, X_batch in enumerate(all_test_input_data):
+            X_batch = X_batch.unsqueeze(0)
             y_batch = all_test_output_data[idx].unsqueeze(0)
             input_lens_batch = input_lens[idx].unsqueeze(0)
 
@@ -245,6 +247,9 @@ class EncDecTrainedModel(object):
                 _run_encoder(X_batch, input_lens_batch, self.input_emb, self.encoder)
 
             prediction = _predict(self.decoder, enc_output_each_word, enc_hidden, self.output_indexer, self.output_emb)
+
+            if prediction.item() == y_batch[0].item():
+                correct += 1
 
         print("Correctness", str(correct) + "/" + str(total) + ": " + str(round(correct / total, 5)))
 
@@ -272,17 +277,17 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
 
     input_emb = EmbeddingLayer(word_vectors, args.emb_dropout)
     encoder = AttentionRNNEncoder(input_size, args.hidden_size, args.rnn_dropout, args.bidirectional)
-    output_emb = RawEmbeddingLayer(100, len(output_indexer), 0.1)
+    output_emb = RawEmbeddingLayer(100, len(output_indexer), 0.2)
     decoder = AttentionRNNDecoder(args.hidden_size, 100, output_size, input_max_len, args)
 
     # Construct optimizer. Using Adam optimizer
     params = list(encoder.parameters()) + list(input_emb.parameters()) \
              + list(decoder.parameters()) + list(output_emb.parameters())
-    lr = 1e-3
+    lr = 0.0005
     optimizer = Adam(params, lr=lr)
 
     loss_function = nn.NLLLoss()
-    num_epochs = 10
+    num_epochs = 8
 
     for epoch in range(num_epochs):
 
@@ -301,5 +306,7 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
                                    loss_function, word_indexer, output_indexer)
 
         print("Epoch Loss:", epoch_loss)
+        if epoch == 0:
+            EncDecTrainedModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len).evaluate(test_data)
 
-    return EncDecTrainedModel(encoder, input_emb, word_indexer, word_indexer, authors, args)
+    return EncDecTrainedModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len)
