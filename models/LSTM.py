@@ -115,6 +115,10 @@ class RNNEncoder(nn.Module):
 # Average accuracy: .583 with 30 passages/book/author, 4 authors
 # Average accuracy: .675 with 50 passages/book/author, 4 authors
 
+# British authors
+# Average accuracy: .333 with 30 passages/book/author, 5 authors
+# Average accuracy: .425 with 30 passages/book/author, 5 authors
+
 # Combined authors
 # Average accuracy: .264 with 10 passages/book/author, 9 authors
 # Average accuracy: .2745 with 30 passages/book/author, 9 authors
@@ -228,6 +232,6 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
             loss.backward()
             optimizer.step()
         
-        print("Epoch Loss:", epoch_loss)
+        print("Epoch " + str(epoch) + " Loss:", epoch_loss)
     
     return LSTMTrainedModel(encoder, model_emb, word_indexer, authors, args)
