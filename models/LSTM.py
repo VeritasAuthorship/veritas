@@ -111,17 +111,22 @@ class RNNEncoder(nn.Module):
 
 
 # American authors
-# Average accuracy: .416 with 10 passages/book/author, 4 authors
-# Average accuracy: .583 with 30 passages/book/author, 4 authors
-# Average accuracy: .675 with 50 passages/book/author, 4 authors
+# Average accuracy: .416 with 10 passages/book/author, 4 authors (old test)
+# Average accuracy: .583 with 30 passages/book/author, 4 authors (old test)
+# Average accuracy: .675 with 50 passages/book/author, 4 authors (old test)
 
 # British authors
-# Average accuracy: .333 with 30 passages/book/author, 5 authors
-# Average accuracy: .425 with 30 passages/book/author, 5 authors
+# Average accuracy: .333 with 30 passages/book/author, 5 authors (old test)
+# Average accuracy: .425 with 30 passages/book/author, 5 authors (old test)
 
 # Combined authors
-# Average accuracy: .264 with 10 passages/book/author, 9 authors
-# Average accuracy: .2745 with 30 passages/book/author, 9 authors
+# Average accuracy: .264 with 10 passages/book/author, 9 authors (old test)
+# Average accuracy: .2745 with 30 passages/book/author, 9 authors (old test)
+
+# ----------------------------------------------------------
+
+# British Authors
+# Average accuracy: 687/2400 = .286 with 200 sentences/book/author, 5 authors (new test)
 
 class LSTMTrainedModel(object):
     def __init__(self, model, model_emb, indexer, authors, args):
@@ -212,7 +217,7 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
         for idx, X_batch in enumerate(all_train_input_data):
             if idx % 100 == 0:
                 print("Example", idx, "out of", len(all_train_input_data))
-            y_batch = all_train_output_data[idx].unsqueeze(0)
+            y_batch = all_train_output_data[idx].unsqueeze(0).to(device)
             input_lens_batch = input_lens[idx].unsqueeze(0).to(device)
 
             # Initialize optimizer
@@ -225,7 +230,7 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
             probs, hidden = encoder.forward(embedded_words, input_lens_batch)
             #print(probs)
             #print("Predicted", torch.argmax(probs,0), "|| Actual" ,y_batch)
-            loss = loss_function(probs.unsqueeze(0), y_batch)
+            loss = loss_function(probs.unsqueeze(0).to(device), y_batch)
             epoch_loss += loss
 
             # Run backward
