@@ -78,6 +78,10 @@ def increment_counter(passage, counter):
 # Average accuracy: .7607 with 30 passages/book/author, 10 runs, 9 authors
 # Average accuracy: .7961 with 50 passages/book/author, 10 runs, 9 authors
 
+# -----------------------------------------------------------------------
+
+# British Authors
+# Average accuracy: 564/2400 = .235 with 200 sentences/book/author, 5 authors (new test)
 
 def evaluate_baseline(test_data, authors):
     random.shuffle(test_data)
