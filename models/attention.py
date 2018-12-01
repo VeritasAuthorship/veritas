@@ -10,6 +10,8 @@ from utils import make_padded_input_tensor
 
 SOS_SYMBOL = "<SOS>"
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 
 class RawEmbeddingLayer(nn.Module):
     def __init__(self, input_dim, full_dict_size, embedding_dropout_rate):
@@ -158,7 +160,7 @@ class AttentionRNNDecoder(nn.Module):
 def _run_encoder(x_tensor, inp_lens_tensor, model_input_emb, model_enc):
     input_emb = model_input_emb.forward(x_tensor)
     enc_output_each_word, enc_context_mask, enc_final_states = model_enc.forward(input_emb, inp_lens_tensor)
-    enc_final_states_reshaped = enc_final_states[0].unsqueeze(0), enc_final_states[1].unsqueeze(0)
+    enc_final_states_reshaped = enc_final_states[0].unsqueeze(0).to(device), enc_final_states[1].unsqueeze(0).to(device)
     return enc_output_each_word, enc_context_mask, enc_final_states_reshaped
 
 
@@ -239,9 +241,9 @@ class EncDecTrainedModel(object):
         correct = 0
         total = len(all_test_input_data)
         for idx, X_batch in enumerate(all_test_input_data):
-            X_batch = X_batch.unsqueeze(0)
-            y_batch = all_test_output_data[idx].unsqueeze(0)
-            input_lens_batch = input_lens[idx].unsqueeze(0)
+            X_batch = X_batch.unsqueeze(0).to(device)
+            y_batch = all_test_output_data[idx].unsqueeze(0).to(device)
+            input_lens_batch = input_lens[idx].unsqueeze(0).to(device)
 
             enc_output_each_word, enc_context_mask, enc_hidden = \
                 _run_encoder(X_batch, input_lens_batch, self.input_emb, self.encoder)
@@ -260,13 +262,13 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
 
     # Create indexed input
     print("creating indexed input")
-    input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in train_data]))
+    input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in train_data])).to(device)
     input_max_len = torch.max(input_lens, dim=0)[0].item()
     # input_max_len = np.max(np.asarray([len(word_tokenize(ex.passage)) for ex in train_data]))
     print("train input")
-    all_train_input_data = torch.LongTensor(make_padded_input_tensor(train_data, word_indexer, input_max_len))
+    all_train_input_data = torch.LongTensor(make_padded_input_tensor(train_data, word_indexer, input_max_len)).to(device)
     print("train output")
-    all_train_output_data = torch.LongTensor(np.asarray([authors.index_of(ex.author) for ex in train_data]))
+    all_train_output_data = torch.LongTensor(np.asarray([authors.index_of(ex.author) for ex in train_data])).to(device)
 
     # DataLoader constructs each batch from the given data
     input_size = args.embedding_size
@@ -297,9 +299,9 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
         for idx, X_batch in enumerate(all_train_input_data):
             if idx % 100 == 0:
                 print("Example", idx, "out of", len(all_train_input_data))
-            X_batch = X_batch.unsqueeze(0)
-            y_batch = all_train_output_data[idx].unsqueeze(0)
-            input_lens_batch = input_lens[idx].unsqueeze(0)
+            X_batch = X_batch.unsqueeze(0).to(device)
+            y_batch = all_train_output_data[idx].unsqueeze(0).to(device)
+            input_lens_batch = input_lens[idx].unsqueeze(0).to(device)
 
             epoch_loss += _example(X_batch, y_batch, input_lens_batch, encoder, decoder, input_emb, output_emb,
                                    [optimizer],
