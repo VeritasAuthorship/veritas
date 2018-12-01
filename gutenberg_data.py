@@ -20,7 +20,7 @@ class GutenbergBook:
         self.title = title
         self.text = text
 
-    def select_passages(self, n, length, method, min_char_length=50, max_char_length=500):
+    def select_passages(self, n, length, method, min_char_length=100, max_char_length=200):
         """
         Select n passages at random from a book, either by paragraph
         or by sentence.
@@ -80,7 +80,8 @@ class GutenbergData:
         authors = Indexer()
 
         for book in self.books:
-            selected = book.select_passages(n=passages_per_book, length=passage_length, method=passage_type)
+            #selected = book.select_passages(n=passages_per_book, length=passage_length, method=passage_type)
+            selected = book.select_passages(n=200, length=1, method=passage_type)
             authors.get_index(book.author)
 
             for i in range(len(selected)):
