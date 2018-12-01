@@ -295,7 +295,7 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
 
         # for X_batch, y_batch, input_lens_batch in train_batch_loader:
         for idx, X_batch in enumerate(all_train_input_data):
-            if idx % 10 == 0:
+            if idx % 100 == 0:
                 print("Example", idx, "out of", len(all_train_input_data))
             X_batch = X_batch.unsqueeze(0)
             y_batch = all_train_output_data[idx].unsqueeze(0)
@@ -305,7 +305,7 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
                                    [optimizer],
                                    loss_function, word_indexer, output_indexer)
 
-        print("Epoch Loss:", epoch_loss)
+        print("Epoch " + str(epoch) + " Loss:", epoch_loss)
         if epoch == 0:
             EncDecTrainedModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len).evaluate(test_data)
 

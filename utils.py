@@ -122,12 +122,12 @@ def relativize(file, outfile, indexer):
     for line in f:
         word = line[:line.find(' ')]
         if indexer.contains(word):
-            print("Keeping word vector for " + word)
+            #print("Keeping word vector for " + word)
             voc.append(word)
             o.write(line)
-    for word in indexer.objs_to_ints.keys():
-        if word not in voc:
-            print("Missing " + word)
+    #for word in indexer.objs_to_ints.keys():
+        #if word not in voc:
+        #    print("Missing " + word)
     f.close()
     o.close()
 

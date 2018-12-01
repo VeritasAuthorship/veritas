@@ -19,6 +19,8 @@ def arg_parse():
     parser.add_argument('--model', type=str, default='BASELINE', help="Model to run")
     parser.add_argument('--train_type', type=str, default="GUTENBERG", help="Data type - Gutenberg or custom")
     parser.add_argument('--train_path', type=str, default='data/british/', help='Path to the training set')
+    parser.add_argument('--test_path', type=str, default='data/gut-test/british', help='Path to the test set')
+
 
     # Seq-2-Seq args
     parser.add_argument('--reverse_input', type=bool, default=False)
@@ -41,7 +43,7 @@ if __name__ == "__main__":
     if args.model == 'BASELINE':
         # Get books from train path and call baselineb model train function
         if (args.train_type == 'GUTENBERG'):
-            train_data, test_data, num_authors =  gutenberg_dataset(args.train_path)
+            train_data, test_data, num_authors =  gutenberg_dataset(args.train_path, args.test_path)
             print("training")
             authors = train_baseline(train_data)
             print("testing")
@@ -49,7 +51,7 @@ if __name__ == "__main__":
 
     elif args.model == 'LSTM':
         if args.train_type == 'GUTENBERG':
-            train_data, test_data, authors = gutenberg_dataset(args.train_path)
+            train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path)
             word_indexer = Indexer()
             add_dataset_features(train_data, word_indexer)
             add_dataset_features(test_data, word_indexer)
@@ -66,7 +68,7 @@ if __name__ == "__main__":
 
     elif args.model == "LSTM_ATTN":
         if args.train_type == 'GUTENBERG':
-            train_data, test_data, authors = gutenberg_dataset(args.train_path)
+            train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path)
             word_indexer = Indexer()
             add_dataset_features(train_data, word_indexer)
             add_dataset_features(test_data, word_indexer)

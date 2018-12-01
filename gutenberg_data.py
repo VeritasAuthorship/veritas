@@ -68,7 +68,7 @@ class GutenbergData:
 
         return self
 
-    def create_dataset(self, passages_per_book=10, passage_length=3, passage_type="sentence", test_ex=3):
+    def create_dataset(self, passages_per_book=50, passage_length=3, passage_type="sentence"):
         """
         Create a dataset from a set of books. Can specify # passages, passage length, passage
         type (sentence / paragraph). Output is a list of Examples.
@@ -77,8 +77,6 @@ class GutenbergData:
         y: list of authors
         """
         examples = []
-        test = []
-
         authors = Indexer()
 
         for book in self.books:
@@ -87,21 +85,21 @@ class GutenbergData:
 
             for i in range(len(selected)):
                 passage = selected[i]
-                if i < passages_per_book - test_ex:
-                    examples.append(Example(passage, book.author))
-                else:
-                    test.append(Example(passage, book.author))
+                examples.append(Example(passage, book.author))
 
-        return examples, test, authors
+        return examples, authors
 
 
-def gutenberg_dataset(train_path):
+def gutenberg_dataset(train_path, test_path):
     gd = GutenbergData().load_from(train_path)
-    train_data, test_data, num_authors = gd.create_dataset()
+    gd_test = GutenbergData().load_from(test_path)
+    train_data, authors = gd.create_dataset()
+    test_data, _ = gd_test.create_dataset(passages_per_book=8)
+    #test_data = train_data
     print("Finished loading data")
 
     # TODO: test data splitting
-    return train_data, test_data, num_authors
+    return train_data, test_data, authors
 
 if __name__ == '__main__':
     gutenberg_dataset("data/combined")

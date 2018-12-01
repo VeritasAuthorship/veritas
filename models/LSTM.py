@@ -199,7 +199,7 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
     optimizer = Adam(params, lr=lr)
 
     loss_function = nn.NLLLoss()
-    num_epochs = 15
+    num_epochs = 10
 
     encoder.train()
     model_emb.train()
