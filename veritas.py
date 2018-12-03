@@ -4,13 +4,16 @@
 
 import argparse
 import sys
+import models.keras_lstm as k
 
 from models.attention import train_enc_dec_model
 from utils import *
 from gutenberg_data import *
+from spooky_authorship import spooky_authorship_data
 
 # sys.path.append("./models")
 from models.baseline import *
+from models.sklearn_baselines import sklearn_train
 from models.LSTM import *
 
 # Read in command line arguments to the system
@@ -49,6 +52,13 @@ if __name__ == "__main__":
             print("testing")
             evaluate_baseline(test_data, authors)
 
+        elif args.train_type == "SPOOKY":
+            train_data, test_data, num_authors = spooky_authorship_data()
+            print("training")
+            authors = train_baseline(train_data)
+            print("testing")
+            evaluate_baseline(test_data, authors)
+
     elif args.model == 'LSTM':
         if args.train_type == 'GUTENBERG':
             train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path)
@@ -66,6 +76,23 @@ if __name__ == "__main__":
             print("testing")
             trained_model.evaluate(test_data)
 
+        elif args.train_type == 'SPOOKY':
+            train_data, test_data, authors = spooky_authorship_data()
+            word_indexer = Indexer()
+            add_dataset_features(train_data, word_indexer)
+            add_dataset_features(test_data, word_indexer)
+
+            relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
+            word_vectors = read_word_embeddings(args.word_vecs_path)
+
+            print("Finished extracting embeddings")
+            print("training")
+            trained_model = train_lstm_model(train_data, test_data, authors, word_vectors, args)
+
+            print("testing")
+            trained_model.evaluate(test_data)
+
+
     elif args.model == "LSTM_ATTN":
         if args.train_type == 'GUTENBERG':
             train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path)
@@ -82,6 +109,29 @@ if __name__ == "__main__":
 
             print("testing")
             trained_model.evaluate(test_data)
+
+    elif args.model == "KERAS":
+        if args.train_type == "GUTENBERG":
+            train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path)
+            embeddings = read_word_embeddings(args.word_vecs_path)
+
+            k.train_keras_model(embeddings, train_data, test_data, authors)
+        elif args.train_type == "SPOOKY":
+            train_data, test_data, authors = spooky_authorship_data()
+            embeddings = read_word_embeddings(args.word_vecs_path)
+
+            k.train_keras_model(embeddings, train_data, test_data, authors)
+
+    elif args.model == "SKLEARN":
+        if args.train_type == "GUTENBERG":
+            train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path)
+
+            sklearn_train(train_data, test_data, authors)
+        elif args.train_type == "SPOOKY":
+            train_data, test_data, authors = spooky_authorship_data()
+
+            sklearn_train(train_data, test_data, authors)
+
 
     elif args.model == 'VAE':
         pass
