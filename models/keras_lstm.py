@@ -11,6 +11,16 @@ from nltk import pos_tag, word_tokenize
 from utils import *
 
 
+# RESULTS:
+# -> Regular LSTM, using Adam, 10 epochs, using Glove Embeddings
+# SPOOKY
+#     0.45 on 70-30 split
+# GUTENBERG
+#   Highest: 0.32, generally 0.27
+#
+# -> LSTM, using Adam, 10 epochs, POS-tags
+
+
 def transform_dataset(dataset, authors, max_length=None):
     texts = [ex.passage for ex in dataset]
     print(set([ex.author for ex in dataset]))
