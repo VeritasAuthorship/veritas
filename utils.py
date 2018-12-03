@@ -58,18 +58,34 @@ class WordEmbeddings:
         self.word_indexer = word_indexer
         self.vectors = vectors
 
+        assert self.vectors.shape[0] == len(self.word_indexer)
+
+    @property
+    def embedding_dim(self):
+        return len(self.vectors[0])
+
     def get_embedding(self, word):
-        word_idx = self.word_indexer.get_index(word)
+        word_idx = self.word_indexer.index_of(word)
+        if word_idx == len(self.word_indexer):
+            print("HALT")
+            exit()
         if word_idx != -1:
             return self.vectors[word_idx]
         else:
-            return self.vectors[self.word_indexer.get_index(UNK_SYMBOL)]
+            return self.vectors[self.word_indexer.index_of(UNK_SYMBOL)]
+
+    def word2embedding_idx(self, word):
+        word_idx = self.word_indexer.index_of(word)
+        if word_idx != -1:
+            return word_idx
+        else:
+            return self.word_indexer.index_of(UNK_SYMBOL)
 
     def get_embedding_idx(self, word_idx):
         if word_idx != -1:
             return self.vectors[word_idx]
         else:
-            return self.vectors[self.word_indexer.get_index(UNK_SYMBOL)]
+            return self.vectors[self.word_indexer.index_of(UNK_SYMBOL)]
 
     def get_average_score(self, word_idx):
         vec = self.get_embedding_idx(word_idx)
