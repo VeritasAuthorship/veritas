@@ -2,7 +2,7 @@ import os
 import random
 from nltk import sent_tokenize
 
-from utils import Indexer
+from utils import Indexer, Example
 
 
 def _gutenberg_filename(author, title):
