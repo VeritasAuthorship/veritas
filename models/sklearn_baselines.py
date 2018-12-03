@@ -22,6 +22,17 @@ def pos(passage):
     return " ".join([tag for word, tag in postags])
 
 
+#
+# Gutenberg dataset:
+#  1-3 grams
+#    Logistic Regression: 0.4
+#    Multinomial NB   : 0.56
+#
+# Spooky dataset:
+# 1-3 grams
+#    Logistic Regression: 0.80
+#    Multinomial NB: 0.83
+
 def sklearn_train(train_exs, test_exs, authors, pos_tags=False):
     vectorizer = CountVectorizer(ngram_range=(1, 3))
 
