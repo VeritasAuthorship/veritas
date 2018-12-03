@@ -6,6 +6,7 @@ from torch.autograd import Variable as Var
 from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
 
+from models.attention import RawEmbeddingLayer
 from utils import *
 import numpy as np
 
@@ -23,8 +24,6 @@ class EmbeddingLayer(nn.Module):
         self.word_embedding = nn.Embedding.from_pretrained(torch.from_numpy(word_vectors.vectors).float(), False)
         self.word_vectors = word_vectors
 
-    # Takes either a non-batched input [sent len x input_dim] or a batched input
-    # [batch size x sent len x input dim]
     def forward(self, input):
         try:
             embedded_words = self.word_embedding(input)
@@ -42,7 +41,7 @@ class EmbeddingLayer(nn.Module):
 class RNNEncoder(nn.Module):
     # Parameters: input size (should match embedding layer), hidden size for the LSTM, dropout rate for the RNN,
     # and a boolean flag for whether or not we're using a bidirectional encoder
-    def __init__(self, input_size, hidden_size, output_size, word_vectors, dropout, bidirect=True):
+    def __init__(self, input_size, hidden_size, output_size, dropout, bidirect=True):
         super(RNNEncoder, self).__init__()
         self.bidirect = bidirect
         self.input_size = input_size
@@ -126,7 +125,10 @@ class RNNEncoder(nn.Module):
 # ----------------------------------------------------------
 
 # British Authors
+# Average accuracy: .196 with 30 passages/book/author, 5 authors (new test)
+
 # Average accuracy: 687/2400 = .286 with 200 sentences/book/author, 5 authors (new test)
+# Average accuracy: 1432/4000 = .358 with 400 sentences/book/author, 5 authors (new test)
 
 class LSTMTrainedModel(object):
     def __init__(self, model, model_emb, indexer, authors, args):
@@ -168,8 +170,9 @@ class LSTMTrainedModel(object):
         print("Correctness", str(correct) + "/" + str(total) + ": " + str(round(correct/total, 5)))
 
 
-def train_lstm_model(train_data, test_data, authors, word_vectors, args):
+def train_lstm_model(train_data, test_data, authors, word_vectors, args, pretrained=True):
     train_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
+
     word_indexer = word_vectors.word_indexer
 
     # Create indexed input
@@ -182,21 +185,14 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args):
     print("train output")
     all_train_output_data = torch.LongTensor(np.asarray([authors.index_of(ex.author) for ex in train_data]))
 
-    # DataLoader constructs each batch from the given data
-    '''
-    train_batch_loader = DataLoader(
-        TensorDataset(
-            all_train_input_data,
-            all_train_output_data,
-            input_lens
-        ), batch_size=args.batch_size, shuffle=True
-    )
-    '''
     input_size = args.embedding_size
     output_size = len(authors)
 
-    model_emb = EmbeddingLayer(word_vectors, args.emb_dropout).to(device)
-    encoder = RNNEncoder(input_size, args.hidden_size, output_size, word_vectors, args.rnn_dropout).to(device)
+    if pretrained:
+        model_emb = EmbeddingLayer(word_vectors, args.emb_dropout).to(device)
+    else:
+        model_emb = RawEmbeddingLayer(args.embedding_size, len(word_indexer), args.emb_dropout).to(device)
+    encoder = RNNEncoder(input_size, args.hidden_size, output_size, args.rnn_dropout).to(device)
 
     # Construct optimizer. Using Adam optimizer
     params = list(encoder.parameters()) + list(model_emb.parameters())

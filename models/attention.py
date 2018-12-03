@@ -5,13 +5,11 @@ import torch.nn.functional as F
 from nltk import word_tokenize
 from torch.optim import Adam
 
-from models.LSTM import EmbeddingLayer, LSTMTrainedModel
-from utils import make_padded_input_tensor
+from utils import *
 
 SOS_SYMBOL = "<SOS>"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
 
 class RawEmbeddingLayer(nn.Module):
     def __init__(self, input_dim, full_dict_size, embedding_dropout_rate):
@@ -52,7 +50,6 @@ class PretrainedEmbeddingLayer(nn.Module):
                     print(j)
         final_embeddings = self.dropout(embedded_words)
         return final_embeddings
-
 
 class AttentionRNNEncoder(nn.Module):
     # Parameters: input size (should match embedding layer), hidden size for the LSTM, dropout rate for the RNN,

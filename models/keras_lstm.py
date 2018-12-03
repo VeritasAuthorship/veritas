@@ -8,18 +8,8 @@ from keras.utils import to_categorical
 from models.attention_decoder import AttentionLayer
 from nltk import pos_tag, word_tokenize
 
-from utils import WordEmbeddings
+from utils import *
 
-def pos(passage):
-    words = word_tokenize(passage)
-    postags = pos_tag(words)
-
-    final = []
-    for i in range(len(postags) - 1):
-        final.append(postags[i] + postags[i+1])
-
-
-    return " ".join([tag for word, tag in postags])
 
 def transform_dataset(dataset, authors, max_length=None):
     texts = [ex.passage for ex in dataset]
