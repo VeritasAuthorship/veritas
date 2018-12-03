@@ -48,11 +48,6 @@ class GutenbergBook:
         return [_single_passage(sequence, length) for _ in range(n)]
 
 
-class Example:
-    def __init__(self, passage, author):
-        self.passage = passage
-        self.author = author
-
 class GutenbergData:
     def __init__(self):
         self.books = []

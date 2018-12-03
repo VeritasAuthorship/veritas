@@ -18,6 +18,9 @@ class Indexer(object):
     def __len__(self):
         return len(self.ints_to_objs)
 
+    def get_object(self, i):
+        return self.ints_to_objs[i]
+
     def contains(self, obj):
         return self.index_of(obj) != -1
 
@@ -150,3 +153,9 @@ def make_output_one_hot_tensor(exs, output_indexer):
         result.append([int(i == output_indexer.index_of(ex.author)) for i in range(len(output_indexer))])
 
     return np.array(result)
+
+
+class Example:
+    def __init__(self, passage, author):
+        self.passage = passage
+        self.author = author
