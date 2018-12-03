@@ -167,8 +167,9 @@ def make_output_one_hot_tensor(exs, output_indexer):
     return np.array(result)
 
 def pos(passage):
-    tokenize = RegexpTokenizer(r'\w+')
-    words = tokenize.tokenize(passage)
+    #tokenize = RegexpTokenizer(r'\w+')
+    #words = tokenize.tokenize(passage)
+    words = word_tokenize(passage)
     postags = pos_tag(words)
 
     final = []

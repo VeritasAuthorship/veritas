@@ -130,6 +130,9 @@ class RNNEncoder(nn.Module):
 # Average accuracy: 687/2400 = .286 with 200 sentences/book/author, 5 authors (new test)
 # Average accuracy: 1432/4000 = .358 with 400 sentences/book/author, 5 authors (new test)
 
+# Average accuracy: 642/2000 = .286 with 200 sentences/book/author, 5 authors (new test) WITH POS EMBEDDINGS
+# Average accuracy: 1327/4000 = .332 with 400 sentences/book/author, 5 authors (new test) WITH POS EMBEDDINGS
+
 class LSTMTrainedModel(object):
     def __init__(self, model, model_emb, indexer, authors, args):
         # Add any args you need here
