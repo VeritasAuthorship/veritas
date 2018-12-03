@@ -1,5 +1,5 @@
 # utils.py This file may be used for all utility functions
-from nltk.tokenize import sent_tokenize, word_tokenize, pos_tag
+from nltk import sent_tokenize, word_tokenize, pos_tag, RegexpTokenizer
 import numpy as np
 
 '''
@@ -56,7 +56,7 @@ class WordEmbeddings:
         self.word_indexer = word_indexer
         self.vectors = vectors
 
-        assert self.vectors.shape[0] == len(self.word_indexer)
+        #assert self.vectors.shape[0] == len(self.word_indexer)
 
     @property
     def embedding_dim(self):
@@ -167,15 +167,13 @@ def make_output_one_hot_tensor(exs, output_indexer):
     return np.array(result)
 
 def pos(passage):
-    words = word_tokenize(passage)
+    tokenize = RegexpTokenizer(r'\w+')
+    words = tokenize.tokenize(passage)
     postags = pos_tag(words)
 
     final = []
-    for i in range(len(postags)):
-        if i > 0:
-            final.append(postags[i-1][1] + postags[i][1])
-        if i < len(postags) -1:
-            final.append(postags[i][1] + postags[i+1][1])
+    for i in range(len(postags) -1):
+        final.append(postags[i][1] + postags[i+1][1])
     return " ".join(final)
 
 class Example:

@@ -93,8 +93,6 @@ def gutenberg_dataset(train_path, test_path, postags=False):
     test_data, _ = gd_test.create_dataset(passages_per_book=8, postags=postags)
     #test_data = train_data
 
-    print(train_data)
-
     print("Finished loading data")
 
     # TODO: test data splitting
