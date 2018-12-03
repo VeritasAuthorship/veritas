@@ -29,10 +29,7 @@ def pos(passage):
 #   Highest: 0.32, generally 0.27
 #
 # -> LSTM, using Adam, 10 epochs, POS-tags
-#
-#
-#
-#
+
 
 def transform_dataset(dataset, authors, max_length=None):
     texts = [ex.passage for ex in dataset]
