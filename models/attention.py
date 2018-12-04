@@ -94,6 +94,7 @@ class AttentionRNNEncoder(nn.Module):
     # reflecting where the model's output should be considered), and h_t, a *tuple* containing
     # the final states h and c from the encoder for each sentence.
     def forward(self, embedded_words, input_lens):
+        print(embedded_words[0], input_lens)
         # Takes the embedded sentences, "packs" them into an efficient Pytorch-internal representation
         packed_embedding = nn.utils.rnn.pack_padded_sequence(embedded_words, input_lens, batch_first=True)
         # Runs the RNN over each sequence. Returns output at each position as well as the last vectors of the RNN
@@ -165,7 +166,7 @@ def _run_encoder(x_tensor, inp_lens_tensor, model_input_emb, model_enc):
 
 
 def _predict(decoder, enc_output_each_word, enc_hidden, output_indexer, model_output_emb):
-    decoder_input = torch.tensor([[output_indexer.index_of(SOS_SYMBOL)]])
+    decoder_input = torch.tensor([[output_indexer.index_of(SOS_SYMBOL)]]).to(device)
     decoder_hidden = enc_hidden
 
     # run decoder, only once to get author classification
@@ -179,12 +180,13 @@ def _predict(decoder, enc_output_each_word, enc_hidden, output_indexer, model_ou
 
 def _run_decoder(decoder, enc_output_each_word, enc_hidden, output_tensor,
                  loss_function, output_indexer, model_output_emb):
-    decoder_input = torch.tensor([[output_indexer.index_of(SOS_SYMBOL)]])
+    decoder_input = torch.tensor([[output_indexer.index_of(SOS_SYMBOL)]]).to(device)
     decoder_hidden = enc_hidden
 
     # run decoder, only once to get author classification
-    token_embedding = model_output_emb.forward(decoder_input)
+    token_embedding = model_output_emb.forward(decoder_input).to(device)
     decoder_output, decoder_hidden = decoder.forward(token_embedding, decoder_hidden, enc_output_each_word)
+    decoder_output = decoder_output.to(device)
 
     # loss w.r.t. true author
     loss = loss_function(decoder_output, output_tensor)
@@ -308,7 +310,7 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
                                    loss_function, word_indexer, output_indexer)
 
         print("Epoch " + str(epoch) + " Loss:", epoch_loss)
-        if epoch == 0:
-            EncDecTrainedModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len).evaluate(test_data)
+        # if epoch == 0:
+        EncDecTrainedModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len).evaluate(test_data)
 
     return EncDecTrainedModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len)
