@@ -132,7 +132,9 @@ class RNNEncoder(nn.Module):
 
 # Average accuracy: 642/2000 = .286 with 200 sentences/book/author, 5 authors (new test) WITH POS EMBEDDINGS
 # Average accuracy: 1327/4000 = .332 with 400 sentences/book/author, 5 authors (new test) WITH POS EMBEDDINGS
-
+#-------------------------------------------------------------
+# SPOOKY Dataset (70-30 split)
+# One run, Glove word embeddings. 4411 / 5827 = 0.75699
 class LSTMTrainedModel(object):
     def __init__(self, model, model_emb, indexer, authors, args):
         # Add any args you need here
