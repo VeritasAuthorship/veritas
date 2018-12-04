@@ -4,16 +4,16 @@
 
 import argparse
 import sys
-import models.keras_lstm as k
+#import models.keras_lstm as k
 
 from models.attention import train_enc_dec_model
 from utils import *
 from gutenberg_data import *
-from spooky_authorship import spooky_authorship_data
+#from spooky_authorship import spooky_authorship_data
 
 # sys.path.append("./models")
 from models.baseline import *
-from models.sklearn_baselines import sklearn_train
+#from models.sklearn_baselines import sklearn_train
 from models.LSTM import *
 
 
@@ -24,6 +24,7 @@ def arg_parse():
     parser.add_argument('--train_type', type=str, default="GUTENBERG", help="Data type - Gutenberg or custom")
     parser.add_argument('--train_path', type=str, default='data/british/', help='Path to the training set')
     parser.add_argument('--test_path', type=str, default='data/gut-test/british', help='Path to the test set')
+    parser.add_argument('--train_options', type=str, default='', help="Extra train options, eg pos tags embeddings")
 
     # Seq-2-Seq args
     parser.add_argument('--reverse_input', type=bool, default=False)
@@ -64,17 +65,33 @@ if __name__ == "__main__":
 
     elif args.model == 'LSTM':
         if args.train_type == 'GUTENBERG':
-            train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path)
-            word_indexer = Indexer()
-            add_dataset_features(train_data, word_indexer)
-            add_dataset_features(test_data, word_indexer)
+            
+            if args.train_options == 'POS':
+                pretrained = False
+                train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path, postags=True)
 
-            relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
-            word_vectors = read_word_embeddings(args.word_vecs_path)
+                word_indexer = Indexer()
+                add_dataset_features(train_data, word_indexer)
+                add_dataset_features(test_data, word_indexer)
+                word_indexer.get_index(PAD_SYMBOL)
+                word_indexer.get_index(UNK_SYMBOL)
 
+                word_vectors = WordEmbeddings(word_indexer, None)
+    
+            else:
+                pretrained = True
+                train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path)
+                word_indexer = Indexer()
+                add_dataset_features(train_data, word_indexer)
+                add_dataset_features(test_data, word_indexer)
+
+                relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
+                word_vectors = read_word_embeddings(args.word_vecs_path)
+    
             print("Finished extracting embeddings")
             print("training")
-            trained_model = train_lstm_model(train_data, test_data, authors, word_vectors, args)
+
+            trained_model = train_lstm_model(train_data, test_data, authors, word_vectors, args, pretrained=pretrained)
 
             print("testing")
             trained_model.evaluate(test_data)

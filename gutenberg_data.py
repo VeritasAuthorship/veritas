@@ -1,9 +1,8 @@
 import os
 import random
-from nltk import sent_tokenize
+from nltk import sent_tokenize, word_tokenize
 
-from utils import Indexer, Example
-
+from utils import *
 
 def _gutenberg_filename(author, title):
     return "{}__{}.txt".format(author, title)
@@ -63,7 +62,7 @@ class GutenbergData:
 
         return self
 
-    def create_dataset(self, passages_per_book=50, passage_length=3, passage_type="sentence"):
+    def create_dataset(self, passages_per_book=50, passage_length=3, passage_type="sentence", postags=False):
         """
         Create a dataset from a set of books. Can specify # passages, passage length, passage
         type (sentence / paragraph). Output is a list of Examples.
@@ -81,21 +80,24 @@ class GutenbergData:
 
             for i in range(len(selected)):
                 passage = selected[i]
+                if postags:
+                    passage = pos(passage)
                 examples.append(Example(passage, book.author))
 
         return examples, authors
 
-
-def gutenberg_dataset(train_path, test_path):
+def gutenberg_dataset(train_path, test_path, postags=False):
     gd = GutenbergData().load_from(train_path)
     gd_test = GutenbergData().load_from(test_path)
-    train_data, authors = gd.create_dataset()
-    test_data, _ = gd_test.create_dataset(passages_per_book=8)
+    train_data, authors = gd.create_dataset(postags=postags)
+    test_data, _ = gd_test.create_dataset(passages_per_book=8, postags=postags)
     #test_data = train_data
+
     print("Finished loading data")
 
     # TODO: test data splitting
     return train_data, test_data, authors
+
 
 if __name__ == '__main__':
     gutenberg_dataset("data/combined")

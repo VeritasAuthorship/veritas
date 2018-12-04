@@ -1,12 +1,10 @@
 # utils.py This file may be used for all utility functions
-from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk import sent_tokenize, word_tokenize, pos_tag, RegexpTokenizer
 import numpy as np
 
 '''
  Create a bijection betweeen int and object. May be used for reverse indexing
 '''
-
-
 class Indexer(object):
     def __init__(self):
         self.objs_to_ints = {}
@@ -58,7 +56,7 @@ class WordEmbeddings:
         self.word_indexer = word_indexer
         self.vectors = vectors
 
-        assert self.vectors.shape[0] == len(self.word_indexer)
+        #assert self.vectors.shape[0] == len(self.word_indexer)
 
     @property
     def embedding_dim(self):
@@ -127,9 +125,7 @@ def read_word_embeddings(embeddings_file):
     return WordEmbeddings(word_indexer, np.array(vectors))
 
 
-#################
-# You probably don't need to interact with this code unles you want to relativize other sets of embeddings
-# to this data. Relativization = restrict the embeddings to only have words we actually need in order to save memory
+# Relativization = restrict the embeddings to only have words we actually need in order to save memory
 # (but this requires looking at the data in advance).
 
 # Relativize the word vectors to the training set
@@ -170,6 +166,16 @@ def make_output_one_hot_tensor(exs, output_indexer):
 
     return np.array(result)
 
+def pos(passage):
+    #tokenize = RegexpTokenizer(r'\w+')
+    #words = tokenize.tokenize(passage)
+    words = word_tokenize(passage)
+    postags = pos_tag(words)
+
+    final = []
+    for i in range(len(postags) -1):
+        final.append(postags[i][1] + postags[i+1][1])
+    return " ".join(final)
 
 class Example:
     def __init__(self, passage, author):
