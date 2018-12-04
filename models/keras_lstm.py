@@ -10,6 +10,20 @@ from nltk import pos_tag, word_tokenize
 
 from utils import *
 
+<<<<<<< Updated upstream
+=======
+
+def pos(passage):
+    words = word_tokenize(passage)
+    postags = pos_tag(words)
+
+    final = []
+    for i in range(len(postags) - 1):
+        final.append(postags[i] + postags[i + 1])
+
+    return " ".join(final)
+
+>>>>>>> Stashed changes
 
 # RESULTS:
 # -> Regular LSTM, using Adam, 10 epochs, using Glove Embeddings
@@ -33,7 +47,7 @@ def transform_dataset(dataset, authors, max_length=None):
     sequences = tokenizer.texts_to_sequences(texts)
     # max_seq_len = len(max(sequences, key=len))
     max_len = max_length if max_length else len(max(sequences, key=len))
-    padded_sequences = pad_sequences(sequences, max_length)
+    padded_sequences = pad_sequences(sequences, max_len)
 
     return padded_sequences, labels, tokenizer.word_index
 
@@ -83,8 +97,6 @@ def train_keras_model(word_embeddings, train_data, test_data, authors):
     model.add(Dense(len(authors), activation='sigmoid'))
 
     model.compile(loss='categorical_crossentropy', optimizer="adam", metrics=["acc"])
-
-
 
     validation_split = int(0.9 * train_seq.shape[0])
 

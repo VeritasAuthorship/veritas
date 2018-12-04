@@ -276,7 +276,7 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
     output_indexer.get_index(SOS_SYMBOL, True)
     output_size = len(authors) # TODO: this or + 1?
 
-    input_emb = EmbeddingLayer(word_vectors, args.emb_dropout).to(device)
+    input_emb = PretrainedEmbeddingLayer(word_vectors, args.emb_dropout).to(device)
     encoder = AttentionRNNEncoder(input_size, args.hidden_size, args.rnn_dropout, args.bidirectional).to(device)
     output_emb = RawEmbeddingLayer(100, len(output_indexer), 0.2).to(device)
     decoder = AttentionRNNDecoder(args.hidden_size, 100, output_size, input_max_len, args).to(device)
