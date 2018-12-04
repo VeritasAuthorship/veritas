@@ -82,6 +82,9 @@ def increment_counter(passage, counter):
 
 # British Authors
 # Average accuracy: 564/2400 = .235 with 200 sentences/book/author, 5 authors (new test)
+# -----------------------------------------------------------------------
+# SPOOKY Dataset
+# Average accuracy: 3776/5827 = 0.648 with 70-30 train-test split
 
 def evaluate_baseline(test_data, authors):
     random.shuffle(test_data)
