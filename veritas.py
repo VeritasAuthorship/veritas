@@ -131,17 +131,27 @@ if __name__ == "__main__":
             trained_model.evaluate(test_data)
 
         elif args.train_type == "SPOOKY":
+            
             train_data, test_data, authors = spooky_authorship_data()
             word_indexer = Indexer()
             add_dataset_features(train_data, word_indexer)
             add_dataset_features(test_data, word_indexer)
 
-            relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
-            word_vectors = read_word_embeddings(args.word_vecs_path)
+            if args.train_options == 'POS':
+                pretrained = False
+                word_indexer.get_index(PAD_SYMBOL)
+                word_indexer.get_index(UNK_SYMBOL)
+
+                word_vectors = WordEmbeddings(word_indexer, None)
+            
+            else:
+                pretrained = True
+                relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
+                word_vectors = read_word_embeddings(args.word_vecs_path)
 
             print("Finished extracting embeddings")
             print("training")
-            trained_model = train_enc_dec_model(train_data, test_data, authors, word_vectors, args)
+            trained_model = train_enc_dec_model(train_data, test_data, authors, word_vectors, args, pretrained=pretrained)
 
             print("testing")
             trained_model.evaluate(test_data)

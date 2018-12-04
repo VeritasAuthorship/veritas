@@ -264,7 +264,7 @@ class EncDecTrainedModel(object):
         print("Correctness", str(correct) + "/" + str(total) + ": " + str(round(correct / total, 5)))
 
 
-def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
+def train_enc_dec_model(train_data, test_data, authors, word_vectors, args, pretrained=True):
     train_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
     word_indexer = word_vectors.word_indexer
 
@@ -290,7 +290,11 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
     output_indexer.get_index(SOS_SYMBOL, True)
     output_size = len(authors) # TODO: this or + 1?
 
-    input_emb = PretrainedEmbeddingLayer(word_vectors, args.emb_dropout).to(device)
+    if pretrained:
+        input_emb = PretrainedEmbeddingLayer(word_vectors, args.emb_dropout).to(device)
+    else:
+        input_emb = RawEmbeddingLayer(args.embedding_size, len(word_indexer), args.emb_dropout).to(device)
+
     encoder = AttentionRNNEncoder(input_size, args.hidden_size, args.rnn_dropout, args.bidirectional).to(device)
     output_emb = RawEmbeddingLayer(100, len(output_indexer), 0.2).to(device)
     decoder = AttentionRNNDecoder(args.hidden_size, 100, output_size, input_max_len, args).to(device)
