@@ -51,6 +51,16 @@ class PretrainedEmbeddingLayer(nn.Module):
         final_embeddings = self.dropout(embedded_words)
         return final_embeddings
 
+# Spooky Dataset
+
+# Average accuracy: 4527/5827 = .777 
+
+#-------------------------------
+
+# Gutenberg
+# British authors
+# Average accuracy: 400/2000 = .2 with 200 sentences/book/author, 5 authors (new test)
+
 class AttentionRNNEncoder(nn.Module):
     # Parameters: input size (should match embedding layer), hidden size for the LSTM, dropout rate for the RNN,
     # and a boolean flag for whether or not we're using a bidirectional encoder
