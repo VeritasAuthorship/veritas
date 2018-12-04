@@ -9,7 +9,7 @@ import sys
 from models.attention import train_enc_dec_model
 from utils import *
 from gutenberg_data import *
-#from spooky_authorship import spooky_authorship_data
+from spooky_authorship import spooky_authorship_data
 
 # sys.path.append("./models")
 from models.baseline import *
