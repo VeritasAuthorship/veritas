@@ -135,6 +135,7 @@ class RNNEncoder(nn.Module):
 #-------------------------------------------------------------
 # SPOOKY Dataset (70-30 split)
 # One run, Glove word embeddings. 4411 / 5827 = 0.75699
+
 class LSTMTrainedModel(object):
     def __init__(self, model, model_emb, indexer, authors, args):
         # Add any args you need here

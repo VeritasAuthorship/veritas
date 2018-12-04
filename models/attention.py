@@ -51,6 +51,16 @@ class PretrainedEmbeddingLayer(nn.Module):
         final_embeddings = self.dropout(embedded_words)
         return final_embeddings
 
+# Spooky Dataset
+
+# Average accuracy: 4527/5827 = .777 
+
+#-------------------------------
+
+# Gutenberg
+# British authors
+# Average accuracy: 400/2000 = .2 with 200 sentences/book/author, 5 authors (new test)
+
 class AttentionRNNEncoder(nn.Module):
     # Parameters: input size (should match embedding layer), hidden size for the LSTM, dropout rate for the RNN,
     # and a boolean flag for whether or not we're using a bidirectional encoder
@@ -254,7 +264,7 @@ class EncDecTrainedModel(object):
         print("Correctness", str(correct) + "/" + str(total) + ": " + str(round(correct / total, 5)))
 
 
-def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
+def train_enc_dec_model(train_data, test_data, authors, word_vectors, args, pretrained=True):
     train_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
     word_indexer = word_vectors.word_indexer
 
@@ -280,7 +290,11 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
     output_indexer.get_index(SOS_SYMBOL, True)
     output_size = len(authors) # TODO: this or + 1?
 
-    input_emb = PretrainedEmbeddingLayer(word_vectors, args.emb_dropout).to(device)
+    if pretrained:
+        input_emb = PretrainedEmbeddingLayer(word_vectors, args.emb_dropout).to(device)
+    else:
+        input_emb = RawEmbeddingLayer(args.embedding_size, len(word_indexer), args.emb_dropout).to(device)
+
     encoder = AttentionRNNEncoder(input_size, args.hidden_size, args.rnn_dropout, args.bidirectional).to(device)
     output_emb = RawEmbeddingLayer(100, len(output_indexer), 0.2).to(device)
     decoder = AttentionRNNDecoder(args.hidden_size, 100, output_size, input_max_len, args).to(device)
