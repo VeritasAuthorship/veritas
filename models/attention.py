@@ -91,7 +91,6 @@ class AttentionRNNEncoder(nn.Module):
     # reflecting where the model's output should be considered), and h_t, a *tuple* containing
     # the final states h and c from the encoder for each sentence.
     def forward(self, embedded_words, input_lens):
-        print(embedded_words[0], input_lens)
         # Takes the embedded sentences, "packs" them into an efficient Pytorch-internal representation
         packed_embedding = nn.utils.rnn.pack_padded_sequence(embedded_words, input_lens, batch_first=True)
         # Runs the RNN over each sequence. Returns output at each position as well as the last vectors of the RNN
@@ -262,7 +261,12 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
     # Create indexed input
     print("creating indexed input")
     input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in train_data])).to(device)
-    input_max_len = torch.max(input_lens, dim=0)[0].item()
+    test_input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in test_data])).to(device)
+
+    train_max_len = torch.max(input_lens, dim=0)[0].item()
+    test_max_len = torch.max(test_input_lens, dim=0)[0].item()
+    input_max_len = max(train_max_len, test_max_len)
+
     # input_max_len = np.max(np.asarray([len(word_tokenize(ex.passage)) for ex in train_data]))
     print("train input")
     all_train_input_data = torch.LongTensor(make_padded_input_tensor(train_data, word_indexer, input_max_len)).to(device)
@@ -308,6 +312,6 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args):
 
         print("Epoch " + str(epoch) + " Loss:", epoch_loss)
         # if epoch == 0:
-        EncDecTrainedModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len).evaluate(test_data)
+        #EncDecTrainedModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len).evaluate(test_data)
 
     return EncDecTrainedModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len)
