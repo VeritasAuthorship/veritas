@@ -166,15 +166,16 @@ def make_output_one_hot_tensor(exs, output_indexer):
 
     return np.array(result)
 
-def pos(passage):
+def pos(passage, n=2):
     #tokenize = RegexpTokenizer(r'\w+')
     #words = tokenize.tokenize(passage)
     words = word_tokenize(passage)
     postags = pos_tag(words)
 
     final = []
-    for i in range(len(postags) -1):
-        final.append(postags[i][1] + postags[i+1][1])
+    for i in range(len(postags) - n):
+        n_gram = sum([postags[i + _i][1] for _i in range(n)])
+        final.append(n_gram)
     return " ".join(final)
 
 class Example:
