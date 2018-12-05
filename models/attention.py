@@ -54,7 +54,7 @@ class PretrainedEmbeddingLayer(nn.Module):
 # Spooky Dataset
 
 # Average accuracy: 4527/5827 = .777, 8 epochs with 70/30 split
-# Average accuracy: 4533/5827 = .778, 8 epochs with 70/30 split
+# Average accuracy: 4533/5827 = .778, 8 epochs with 70/30 split with POS embeddings (1 gram)
 
 #-------------------------------
 
