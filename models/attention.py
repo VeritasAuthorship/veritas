@@ -1,8 +1,6 @@
 import torch
-import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-from nltk import word_tokenize
 from torch.optim import Adam
 
 from utils import *
@@ -52,9 +50,11 @@ class PretrainedEmbeddingLayer(nn.Module):
         return final_embeddings
 
 # Spooky Dataset
-
+#
 # Average accuracy: 4527/5827 = .777, 8 epochs with 70/30 split
-# Average accuracy: 4533/5827 = .778, 8 epochs with 70/30 split
+# Average accuracy: 4533/5827 = .778, 8 epochs with 70/30 split, 1-grams of POS tags
+# Average accuracy: 4444/5827: 0.763, 8 epochs with 70/30 split, 2-grams of POS tags
+# Average accuracy: 4673/5827: 0.802, 15 epochs with 70/30 split, 2-grams of POS tags
 
 #-------------------------------
 
