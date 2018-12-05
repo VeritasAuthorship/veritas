@@ -6,9 +6,11 @@ import torch.nn.functional as F
 import random
 import pyro
 import pyro.distributions as dist
-from pyro.infer import SVI, JitTrace_ELBO, Trace_ELBO
+from pyro.infer import SVI, Trace_ELBO
 from pyro.optim import Adam
 from models.attention import RawEmbeddingLayer, PretrainedEmbeddingLayer
+from nltk import word_tokenize
+from utils import *
 
 # Run on gpu is present
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -18,26 +20,52 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 class VAEncoder(nn.Module):
 
     # Input_size = embedding size, z_dim is the z space size, hidden_dim = number of hidden memory units
-    def __init__(self, input_size, z_dim, hidden_dim):
+    def __init__(self, input_size, z_dim, hidden_size, dropout, bidirect=True):
         super(VAEncoder, self).__init__()
         # setup the three linear transformations used
         self.input_size = input_size
-        self.fc1 = nn.Linear(input_size, hidden_dim)
-        self.fc21 = nn.Linear(hidden_dim, z_dim)
-        self.fc22 = nn.Linear(hidden_dim, z_dim)
+        self.bidirect = bidirect
+        self.reduce_h_W = nn.Linear(hidden_size * 2, hidden_size, bias=True)
+        self.reduce_c_W = nn.Linear(hidden_size * 2, hidden_size, bias=True)
+        self.rnn = nn.LSTM(self.input_size, hidden_size, num_layers=2, batch_first=True,
+                           dropout=dropout, bidirectional=self.bidirect)
+        self.fc21 = nn.Linear(hidden_size, z_dim)
+        self.fc22 = nn.Linear(hidden_size, z_dim)
         # setup the non-linearities
         self.softplus = nn.Softplus()
 
         self.init_weight()
 
     def init_weight(self):
-        nn.init.xavier_normal_(self.fc1.weight)
         nn.init.xavier_normal_(self.fc22.weight)
         nn.init.xavier_normal_(self.fc21.weight)
+        nn.init.xavier_normal_(self.rnn.weight_hh_l0, gain=1)
+        nn.init.xavier_normal_(self.rnn.weight_ih_l0, gain=1)
+        if self.bidirect:
+            nn.init.xavier_uniform_(self.rnn.weight_hh_l0_reverse, gain=1)
+            nn.init.xavier_uniform_(self.rnn.weight_ih_l0_reverse, gain=1)
+        nn.init.constant_(self.rnn.bias_hh_l0, 0)
+        nn.init.constant_(self.rnn.bias_ih_l0, 0)
+        if self.bidirect:
+            nn.init.constant_(self.rnn.bias_hh_l0_reverse, 0)
+            nn.init.constant_(self.rnn.bias_ih_l0_reverse, 0)
 
+    # Input is the embeddings for a sentence
     def forward(self, x):
-        # then compute the hidden units
-        hidden = self.softplus(self.fc1(x))
+        # Encode the embeddings using an LSTM 
+        output, hn = self.rnn(x)
+        
+        h, c = hn[0], hn[1]
+        # Grab the representations from forward and backward LSTMs
+        h_, c_ = torch.cat((h[0], h[1]), dim=1), torch.cat((c[0], c[1]), dim=1)
+        # Reduce them by multiplying by a weight matrix so that the hidden size sent to the decoder is the same
+        # as the hidden size in the encoder
+        new_h = self.reduce_h_W(h_)
+        new_c = self.reduce_c_W(c_)
+        h_t = (new_h, new_c)
+    
+        hidden = self.softplus(h_t[0])
+
         # then return a mean vector and a (positive) square root covariance
         # each of size batch_size x z_dim
         z_loc = self.fc21(hidden)
@@ -99,14 +127,15 @@ class Decoder(nn.Module):
 # define a PyTorch module for the VAE
 class VAE(nn.Module):
 
-    def __init__(self, z_dim, hidden_size):
+    def __init__(self,input_size, z_dim, hidden_size, dropout):
         super(VAE, self).__init__()
-        #self.decoder = Decoder(z_dim, hidden_dim)
-
+        self.decoder = Decoder(z_dim, hidden_size,2 ,dropout)
+        
+        self.input_size = input_size
         self.z_dim = z_dim
         self.hidden_size = hidden_size
         # create the encoder and decoder networks
-        self.encoder = VAEncoder(z_dim, hidden_size)
+        self.encoder = VAEncoder(input_size, z_dim, hidden_size, dropout)
 
     # define the guide (i.e. variational distribution) q(z|x)
     def guide(self, x):
@@ -126,16 +155,17 @@ class VAE(nn.Module):
         pyro.module("decoder", self.decoder)
         with pyro.plate("data", x.shape[0]):
             # setup hyperparameters for prior p(z)
-            z_loc = x.new_zeros(torch.Size((x.shape[0], self.z_dim)))
-            z_scale = x.new_ones(torch.Size((x.shape[0], self.z_dim)))
+            #z_loc = x.new_zeros(torch.Size((x.shape[0], self.z_dim)))
+            #z_scale = x.new_ones(torch.Size((x.shape[0], self.z_dim)))
             # sample from prior (value will be sampled by guide when computing the ELBO)
-            z = pyro.sample("latent", dist.Normal(z_loc, z_scale).to_event(1))
+            #z = pyro.sample("latent", dist.Normal(z_loc, z_scale).to_event(1))
             # decode the latent code z
-            loc_img = self.decoder.forward(z)
+            #loc_img = self.decoder.forward(z)
             # score against actual images
-            pyro.sample("obs", dist.Bernoulli(loc_img).to_event(1), obs=x.reshape(-1, 784))
+            #pyro.sample("obs", dist.Bernoulli(loc_img).to_event(1), obs=x.reshape(-1, 784))
             # return the loc so we can visualize it later
-            return loc_img
+            #return loc_img
+            return 0
 
     # Retrieve the forward distibution for the incoming sentence.
     def forward(self, x):
@@ -146,40 +176,88 @@ class VAE(nn.Module):
         return z
 
 
-def main(train_data, test_data, authors, word_vectors, args):
+def train_vae(train_data, test_data, authors, word_vectors, args, pretrained=True):
     # clear param store
     pyro.clear_param_store()
 
-    # setup the VAE
-    vae = VAE(args.z_dim, args.hidden_size).to(device)
-    decoder = Decoder(args.z_dim, args.hidden_size, len(authors), args.dropout)
+    word_indexer = word_vectors.word_indexer
+    input_size = args.embedding_size
+    input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in train_data]))
+    input_max_len = torch.max(input_lens, dim=0)[0].item()
+    all_train_input_data = torch.LongTensor(make_padded_input_tensor(train_data, word_indexer, input_max_len))
+    all_train_output_data = torch.LongTensor(np.asarray([authors.index_of(ex.author) for ex in train_data]))
 
-    # setup the optimizer
-    adam_args = {"lr": args.learning_rate}
+    # if pretrained, use Glove embeddings, else use a raw embedding layer
+    if pretrained:
+        model_emb = PretrainedEmbeddingLayer(word_vectors, args.emb_dropout).to(device)
+    else:
+        model_emb = RawEmbeddingLayer(args.embedding_size, len(word_indexer), args.emb_dropout).to(device)
+    # Set up variational auto encoder
+    vae = VAE(input_size, args.z_dim, args.hidden_size, args.rnn_dropout).to(device)
+    decoder = Decoder(args.z_dim, args.hidden_size, len(authors), args.rnn_dropout).to(device)
+
+    vae.train()
+    decoder.train()
+
+    # setup the vae optimizer
+    adam_args = {"lr": args.lr}
     optimizer = Adam(adam_args)
 
+    # Setup the decoder optimizer
+    dec_optimizer = torch.optim.Adam(decoder.parameters(), lr=args.lr)
+    loss_function = nn.NLLLoss()
+    num_epochs = args.epochs
+
     # setup the inference algorithm
-    elbo = JitTrace_ELBO() if args.jit else Trace_ELBO()
+    #elbo = JitTrace_ELBO() if args.jit else Trace_ELBO()
+    elbo = Trace_ELBO()
     svi = SVI(vae.guide, vae.model, optimizer, loss=elbo)
 
     train_elbo = []
-    # training loop
-    for epoch in range(args.num_epochs):
+    # training loop. We train VAE and decoder separately
+    for epoch in range(num_epochs):
         # initialize loss accumulator
-        epoch_loss = 0.
-        # do a training epoch over each mini-batch x returned
-        # by the data loader
-        for x, _ in train_loader:
-            
-            x = x.to(device)
+        epoch_loss = 0
+
+        for idx, X_batch in enumerate(all_train_input_data):
+            if idx % 100 == 0:
+                print("Example", idx, "out of", len(all_train_input_data))
+            # Get word embeddings
+            embedded_words = model_emb.forward(X_batch.unsqueeze(0).to(device)).to(device)
+
             # do ELBO gradient and accumulate loss
-            epoch_loss += svi.step(x)
+            epoch_loss += svi.step(embedded_words)
 
         # report training diagnostics
-        normalizer_train = len(train_loader.dataset)
-        total_epoch_loss_train = epoch_loss / normalizer_train
-        train_elbo.append(total_epoch_loss_train)
-        print("[epoch %03d]  average training loss: %.4f" % (epoch, total_epoch_loss_train))
+        train_elbo.append(epoch_loss)
+        print("[epoch %03d]  average VAE training loss: %.4f" % (epoch, epoch_loss))
+
+        for idx, X_batch in enumerate(all_train_input_data):
+            if idx % 100 == 0:
+                print("Example", idx, "out of", len(all_train_input_data))
+            y_batch = all_train_output_data[idx].unsqueeze(0).to(device)
+            # Get word embeddings
+            embedded_words = model_emb.forward(X_batch.unsqueeze(0).to(device)).to(device)
+
+            z = vae.forward(embedded_words).to(device)
+
+            # Initialize optimizer
+            dec_optimizer.zero_grad()
+
+            # Get probability and hidden state
+            probs, hidden = decoder.forward(z)
+            print(probs)
+            print("Predicted", torch.argmax(probs,0), "|| Actual" ,y_batch)
+            loss = loss_function(probs.unsqueeze(0).to(device), y_batch)
+            epoch_loss += loss
+
+            # Run backward
+            loss.backward()
+            dec_optimizer.step()
+        
+        print("Epoch " + str(epoch) + " Loss for Decoder:", epoch_loss)
+
+
 
         '''
         if epoch % args.test_frequency == 0:
@@ -209,19 +287,3 @@ def main(train_data, test_data, authors, word_vectors, args):
         '''
 
     return vae
-
-
-if __name__ == '__main__':
-    assert pyro.__version__.startswith('0.3.0')
-    # parse command line arguments
-    parser = argparse.ArgumentParser(description="parse args")
-    parser.add_argument('-n', '--num-epochs', default=101, type=int, help='number of training epochs')
-    parser.add_argument('-tf', '--test-frequency', default=5, type=int, help='how often we evaluate the test set')
-    parser.add_argument('-lr', '--learning-rate', default=1.0e-3, type=float, help='learning rate')
-    parser.add_argument('--cuda', action='store_true', default=False, help='whether to use cuda')
-    parser.add_argument('--jit', action='store_true', default=False, help='whether to use PyTorch jit')
-    parser.add_argument('--z_dim', type=int, default=50)
-    parser.add_argument('--hidden_size', type=int, default=400)
-    args = parser.parse_args()
-
-    model = main(args)
