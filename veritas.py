@@ -15,6 +15,7 @@ from spooky_authorship import spooky_authorship_data
 from models.baseline import *
 #from models.sklearn_baselines import sklearn_train
 from models.LSTM import *
+from models.vae import *
 
 
 # Read in command line arguments to the system
@@ -26,7 +27,7 @@ def arg_parse():
     parser.add_argument('--test_path', type=str, default='data/gut-test/british', help='Path to the test set')
     parser.add_argument('--train_options', type=str, default='', help="Extra train options, eg pos tags embeddings")
 
-    # Seq-2-Seq args
+    # Encoder-Decoder, VAE-RNN args
     parser.add_argument('--reverse_input', type=bool, default=False)
     parser.add_argument("--batch_size", type=int, default=1, help="batch size for encoder training")
     parser.add_argument('--emb_dropout', type=float, default=0.2, help="dropout for embedding layer")
@@ -38,7 +39,10 @@ def arg_parse():
     parser.add_argument('--word_vecs_path', type=str, default='data/glove.6B.300d-relativized.txt',
                         help='path to word vectors file')
     parser.add_argument('--embedding_size', type=int, default=300, help='Embedding size')
-
+    parser.add_argument('--epochs', type=int, default=8, help='Number of epochs')
+    parser.add_argument('--lr', type=float, default=1e-4*5, help='Learning rate')
+    parser.add_argument('--z_dim', type=int, default=50, help='Size of latent space')
+    
     args = parser.parse_args()
     return args
 
@@ -181,7 +185,29 @@ if __name__ == "__main__":
 
 
     elif args.model == 'VAE':
-        pass
+        if args.train_type == 'SPOOKY':
+            train_data, test_data, authors = spooky_authorship_data()
+            word_indexer = Indexer()
+            add_dataset_features(train_data, word_indexer)
+            add_dataset_features(test_data, word_indexer)
+            if args.train_options == 'POS':
+                pretrained = False
+                word_indexer.get_index(PAD_SYMBOL)
+                word_indexer.get_index(UNK_SYMBOL)
+
+                word_vectors = WordEmbeddings(word_indexer, None)
+            
+            else:
+                pretrained = True
+                relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
+                word_vectors = read_word_embeddings(args.word_vecs_path)
+
+            print("Finished extracting embeddings")
+            print("training")
+            trained_model = train_vae(train_data, test_data, authors, word_vectors, args, pretrained=pretrained)
+
+            print("testing")
+            #trained_model.evaluate(test_data)
 
     else:
         raise Exception("Please select appropriate model")
