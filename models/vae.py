@@ -8,27 +8,34 @@ import pyro
 import pyro.distributions as dist
 from pyro.infer import SVI, JitTrace_ELBO, Trace_ELBO
 from pyro.optim import Adam
+from models.attention import RawEmbeddingLayer, PretrainedEmbeddingLayer
 
 # Run on gpu is present
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-
 # define the PyTorch module that parameterizes the
 # diagonal gaussian distribution q(z|x)
 class VAEncoder(nn.Module):
-    def __init__(self, z_dim, hidden_dim):
+
+    # Input_size = embedding size, z_dim is the z space size, hidden_dim = number of hidden memory units
+    def __init__(self, input_size, z_dim, hidden_dim):
         super(VAEncoder, self).__init__()
         # setup the three linear transformations used
-        self.fc1 = nn.Linear(784, hidden_dim)
+        self.input_size = input_size
+        self.fc1 = nn.Linear(input_size, hidden_dim)
         self.fc21 = nn.Linear(hidden_dim, z_dim)
         self.fc22 = nn.Linear(hidden_dim, z_dim)
         # setup the non-linearities
         self.softplus = nn.Softplus()
 
+        self.init_weight()
+
+    def init_weight(self):
+        nn.init.xavier_normal_(self.fc1.weight)
+        nn.init.xavier_normal_(self.fc22.weight)
+        nn.init.xavier_normal_(self.fc21.weight)
+
     def forward(self, x):
-        # define the forward computation on the image x
-        # first shape the mini-batch to have pixels in the rightmost dimension
-        x = x.reshape(-1, 784)
         # then compute the hidden units
         hidden = self.softplus(self.fc1(x))
         # then return a mean vector and a (positive) square root covariance
@@ -39,6 +46,7 @@ class VAEncoder(nn.Module):
 
 # define the PyTorch module that takes in p(z) and return probs
 class Decoder(nn.Module):
+    
     def __init__(self, z_dim, hidden_size, output_size, dropout, bidirect=True):
         super(Decoder, self).__init__()
 
@@ -67,8 +75,8 @@ class Decoder(nn.Module):
             nn.init.constant_(self.rnn.bias_ih_l0_reverse, 0)
         nn.init.xavier_uniform_(self.hiddenToLabel.weight)
 
+    # Takes in a sample in latent space and based on that assigns author probabilities
     def forward(self, z):
-
         # Run z through LSTM decoder and then run through softmax to get probabilities
         output, hn = self.rnn(z)
         if self.bidirect:
@@ -90,8 +98,7 @@ class Decoder(nn.Module):
 
 # define a PyTorch module for the VAE
 class VAE(nn.Module):
-    # by default our latent space is 50-dimensional
-    # and we use 400 hidden units
+
     def __init__(self, z_dim, hidden_size):
         super(VAE, self).__init__()
         #self.decoder = Decoder(z_dim, hidden_dim)
@@ -100,7 +107,6 @@ class VAE(nn.Module):
         self.hidden_size = hidden_size
         # create the encoder and decoder networks
         self.encoder = VAEncoder(z_dim, hidden_size)
-
 
     # define the guide (i.e. variational distribution) q(z|x)
     def guide(self, x):
@@ -112,6 +118,8 @@ class VAE(nn.Module):
             # sample the latent code z
             pyro.sample("latent", dist.Normal(z_loc, z_scale).to_event(1))
 
+
+    # NOT USED FOR CLASSIFICATION MODEL
     # define the model p(x|z)p(z)
     def model(self, x):
         # register PyTorch module `decoder` with Pyro
@@ -129,9 +137,9 @@ class VAE(nn.Module):
             # return the loc so we can visualize it later
             return loc_img
 
-    # define a helper function for reconstructing images
+    # Retrieve the forward distibution for the incoming sentence.
     def forward(self, x):
-        # encode image x
+        # encode the sentence
         z_loc, z_scale = self.encoder.forward(x)
         # sample in latent space
         z = dist.Normal(z_loc, z_scale).sample()
@@ -142,8 +150,6 @@ def main(train_data, test_data, authors, word_vectors, args):
     # clear param store
     pyro.clear_param_store()
 
-    # setup MNIST data loaders
-    # train_loader, test_loader
     # setup the VAE
     vae = VAE(args.z_dim, args.hidden_size).to(device)
     decoder = Decoder(args.z_dim, args.hidden_size, len(authors), args.dropout)
@@ -154,10 +160,9 @@ def main(train_data, test_data, authors, word_vectors, args):
 
     # setup the inference algorithm
     elbo = JitTrace_ELBO() if args.jit else Trace_ELBO()
-    svi = SVI(vae.guide, var.model, optimizer, loss=elbo)
+    svi = SVI(vae.guide, vae.model, optimizer, loss=elbo)
 
     train_elbo = []
-    test_elbo = []
     # training loop
     for epoch in range(args.num_epochs):
         # initialize loss accumulator
@@ -175,6 +180,33 @@ def main(train_data, test_data, authors, word_vectors, args):
         total_epoch_loss_train = epoch_loss / normalizer_train
         train_elbo.append(total_epoch_loss_train)
         print("[epoch %03d]  average training loss: %.4f" % (epoch, total_epoch_loss_train))
+
+        '''
+        if epoch % args.test_frequency == 0:
+            # initialize loss accumulator
+            test_loss = 0.
+            # compute the loss over the entire test set
+            for i, (x, _) in enumerate(test_loader):
+                # if on GPU put mini-batch into CUDA memory
+                if args.cuda:
+                    x = x.cuda()
+                # compute ELBO estimate and accumulate loss
+                test_loss += svi.evaluate_loss(x)
+
+                # pick three random test images from the first mini-batch and
+                # visualize how well we're reconstructing them
+                if i == 0:
+                    if args.visdom_flag:
+                        plot_vae_samples(vae, vis)
+                        reco_indices = np.random.randint(0, x.shape[0], 3)
+                        for index in reco_indices:
+                            test_img = x[index, :]
+                            reco_img = vae.reconstruct_img(test_img)
+                            vis.image(test_img.reshape(28, 28).detach().cpu().numpy(),
+                                      opts={'caption': 'test image'})
+                            vis.image(reco_img.reshape(28, 28).detach().cpu().numpy(),
+                    opts={'caption': 'reconstructed image'})
+        '''
 
     return vae
 
