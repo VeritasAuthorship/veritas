@@ -65,6 +65,9 @@ def get_data(args):
     elif args.train_type == "REUTERS":
         data = create_reuters_data(args=args)
 
+    if args.sentencewise:
+        data = make_sentencewise_data(data)
+
     return data
 
 
@@ -74,8 +77,7 @@ if __name__ == "__main__":
 
     if args.model == 'BASELINE':
         # Get books from train path and call baselineb model train function
-        data = get_data(args)
-        train_data, test_data, authors = sentencewise(data) if args.sentencewise else data
+        train_data, test_data, authors = get_data(args)
 
         print("training baseline model")
         baseline_model = train_baseline(train_data)
