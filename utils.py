@@ -1,10 +1,13 @@
 # utils.py This file may be used for all utility functions
+import random
 from nltk import sent_tokenize, word_tokenize, pos_tag, RegexpTokenizer
 import numpy as np
 
 '''
  Create a bijection betweeen int and object. May be used for reverse indexing
 '''
+
+
 class Indexer(object):
     def __init__(self):
         self.objs_to_ints = {}
@@ -56,7 +59,7 @@ class WordEmbeddings:
         self.word_indexer = word_indexer
         self.vectors = vectors
 
-        #assert self.vectors.shape[0] == len(self.word_indexer)
+        # assert self.vectors.shape[0] == len(self.word_indexer)
 
     @property
     def embedding_dim(self):
@@ -137,12 +140,12 @@ def relativize(file, outfile, indexer):
     for line in f:
         word = line[:line.find(' ')]
         if indexer.contains(word):
-            #print("Keeping word vector for " + word)
+            # print("Keeping word vector for " + word)
             voc.append(word)
             o.write(line)
-    #for word in indexer.objs_to_ints.keys():
-        #if word not in voc:
-        #    print("Missing " + word)
+    # for word in indexer.objs_to_ints.keys():
+    # if word not in voc:
+    #    print("Missing " + word)
     f.close()
     o.close()
 
@@ -166,9 +169,10 @@ def make_output_one_hot_tensor(exs, output_indexer):
 
     return np.array(result)
 
+
 def pos(passage, n=2):
-    #tokenize = RegexpTokenizer(r'\w+')
-    #words = tokenize.tokenize(passage)
+    # tokenize = RegexpTokenizer(r'\w+')
+    # words = tokenize.tokenize(passage)
     words = word_tokenize(passage)
     postags = pos_tag(words)
 
@@ -178,7 +182,32 @@ def pos(passage, n=2):
         final.append(n_gram)
     return " ".join(final)
 
+
 class Example:
     def __init__(self, passage, author):
         self.passage = passage
         self.author = author
+
+
+class AuthorshipModel:
+
+    def _predictions(self, test_data, args):
+        pass
+
+    def _sentencewise_prediction(self, test_data, args):
+        predictions = self._predictions(test_data, args)
+        prediction = max(set(predictions), key=predictions.count)
+        return prediction
+
+    def evaluate(self, test_data, args):
+        if args.sentencewise:
+            predictions = [self._sentencewise_prediction(sentences, args) for sentences in test_data]
+            labels = [sentences[0].author for sentences in test_data]
+        else:
+            predictions = self._predictions(test_data, args)
+            labels = [example.author for example in test_data]
+
+        correct = sum([pred == true for pred, true in zip(predictions, labels)])
+
+        print("Correctness: " + str(correct) + "/" + str(len(test_data)), "->", correct / len(test_data))
+        return correct, len(test_data)
