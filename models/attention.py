@@ -258,11 +258,11 @@ class EncDecTrainedModel(object):
 
             prediction = _predict(self.decoder, enc_output_each_word, enc_hidden, self.output_indexer, self.output_emb)
 
-            predictions.append(prediction)
+            predictions.append(self.output_indexer.get_object(prediction.item()))
 
         return predictions
 
-    def evaluate(self, test_data, args):
+    def myevaluate(self, test_data, args):
         test_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
 
         input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in test_data]))
