@@ -225,7 +225,7 @@ class VAERNNTrainedModel(AuthorshipModel):
             # Get probability and hidden state
             probs, hidden = self.decoder.forward(z)
 
-            predictions.append(torch.argmax(probs).item())
+            predictions.append(self.output_indexer.get_object(torch.argmax(probs).item()))
 
         return predictions
 
