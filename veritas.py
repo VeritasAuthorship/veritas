@@ -65,6 +65,9 @@ def get_data(args):
     elif args.train_type == "REUTERS":
         data = create_reuters_data(args=args)
 
+    if args.sentencewise:
+        data = make_sentencewise_data(data)
+
     return data
 
 
@@ -74,8 +77,7 @@ if __name__ == "__main__":
 
     if args.model == 'BASELINE':
         # Get books from train path and call baselineb model train function
-        data = get_data(args)
-        train_data, test_data, authors = sentencewise(data) if args.sentencewise else data
+        train_data, test_data, authors = get_data(args)
 
         print("training baseline model")
         baseline_model = train_baseline(train_data)
@@ -110,9 +112,11 @@ if __name__ == "__main__":
         data = get_data(args)
         train_data, test_data, authors = data
 
+        flattened_test_data = list(itertools.chain(*test_data)) if args.sentencewise else test_data
+
         word_indexer = Indexer()
         add_dataset_features(train_data, word_indexer)
-        add_dataset_features(test_data, word_indexer)
+        add_dataset_features(flattened_test_data, word_indexer)
 
         if args.train_options == 'POS':
             pretrained = False
@@ -127,7 +131,7 @@ if __name__ == "__main__":
         print("Finished extracting embeddings")
         print("training")
 
-        trained_model = train_lstm_attention_model(train_data, test_data, authors, word_vectors, args)
+        trained_model = train_lstm_attention_model(train_data, flattened_test_data, authors, word_vectors, args)
 
         print("testing")
         trained_model.evaluate(test_data, args)
