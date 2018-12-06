@@ -207,7 +207,7 @@ if __name__ == "__main__":
             trained_model = train_vae(train_data, test_data, authors, word_vectors, args, pretrained=pretrained)
 
             print("testing")
-            #trained_model.evaluate(test_data)
+            trained_model.evaluate(test_data)
 
     else:
         raise Exception("Please select appropriate model")
