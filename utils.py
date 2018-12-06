@@ -209,5 +209,13 @@ class AuthorshipModel:
 
         correct = sum([pred == true for pred, true in zip(predictions, labels)])
 
+        for i in range(len(test_data)):
+            if labels[i]==predictions[i]:
+                print("CORRECT", labels[i])
+                print(test_data[i].passage)
+            else:
+                print("INCORRECT", predictions[i], labels[i])
+                print(test_data[i].passage)
+
         print("Correctness: " + str(correct) + "/" + str(len(test_data)), "->", correct / len(test_data))
         return correct, len(test_data)
