@@ -289,7 +289,7 @@ class EncDecTrainedModel(object):
         print("Correctness", str(correct) + "/" + str(total) + ": " + str(round(correct / total, 5)))
 
 
-def train_enc_dec_model(train_data, test_data, authors, word_vectors, args, pretrained=True):
+def train_lstm_attention_model(train_data, test_data, authors, word_vectors, args, pretrained=True):
     train_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
     word_indexer = word_vectors.word_indexer
 
@@ -327,11 +327,11 @@ def train_enc_dec_model(train_data, test_data, authors, word_vectors, args, pret
     # Construct optimizer. Using Adam optimizer
     params = list(encoder.parameters()) + list(input_emb.parameters()) \
              + list(decoder.parameters()) + list(output_emb.parameters())
-    lr = 0.0005
+    lr = args.lr
     optimizer = Adam(params, lr=lr)
 
     loss_function = nn.NLLLoss()
-    num_epochs = 8
+    num_epochs = args.epochs
 
     for epoch in range(num_epochs):
 

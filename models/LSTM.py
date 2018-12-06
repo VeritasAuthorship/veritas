@@ -232,11 +232,11 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args, pretrai
 
     # Construct optimizer. Using Adam optimizer
     params = list(encoder.parameters()) + list(model_emb.parameters())
-    lr = 1e-4
+    lr = args.lr
     optimizer = Adam(params, lr=lr)
 
     loss_function = nn.NLLLoss()
-    num_epochs = 10
+    num_epochs = args.epochs
 
     encoder.train()
     model_emb.train()
