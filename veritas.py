@@ -133,22 +133,9 @@ if __name__ == "__main__":
         trained_model.evaluate(test_data, args)
 
     elif args.model == "KERAS":
-        if args.train_type == "GUTENBERG":
-            train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path)
-            embeddings = read_word_embeddings(args.word_vecs_path)
-
-            k.train_keras_model(embeddings, train_data, test_data, authors)
-        elif args.train_type == "SPOOKY":
-            train_data, test_data, authors = spooky_authorship_data()
-            embeddings = read_word_embeddings(args.word_vecs_path)
-
-            k.train_keras_model(embeddings, train_data, test_data, authors)
-
-        elif args.train_type == "REUTERS":
-            train_data, test_data, authors = create_reuters_data()
-            embeddings = read_word_embeddings(args.word_vecs_path)
-
-            k.train_keras_model(embeddings, train_data, test_data, authors)
+        train_data, test_data, authors = get_data(args)
+        embeddings = read_word_embeddings(args.word_vecs_path)
+        k.train_keras_model(embeddings, train_data, test_data, authors)
 
     elif args.model == "SKLEARN":
         if args.train_type == "GUTENBERG":
