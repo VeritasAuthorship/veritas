@@ -169,7 +169,7 @@ class LSTMTrainedModel(AuthorshipModel):
                 # Get probability and hidden state
                 probs, hidden = self.model.forward(embedded_words, input_lens_batch)
 
-                predictions.append(torch.argmax(probs).item())
+                predictions.append(self.authors.get_object(torch.argmax(probs).item()))
 
         return predictions
 
