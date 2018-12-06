@@ -136,7 +136,7 @@ if __name__ == "__main__":
             trained_model = train_enc_dec_model(train_data, test_data, authors, word_vectors, args)
 
             print("testing")
-            trained_model.evaluate(test_data)
+            trained_model.evaluate(test_data, args)
 
         elif args.train_type == "SPOOKY":
 
@@ -163,7 +163,7 @@ if __name__ == "__main__":
                                                 pretrained=pretrained)
 
             print("testing")
-            trained_model.evaluate(test_data)
+            trained_model.evaluate(test_data, args)
 
         elif args.train_type == "REUTERS":
             train_data, test_data, authors = create_reuters_data(n_authors=2, articles_per_author=10)
@@ -189,7 +189,7 @@ if __name__ == "__main__":
                                                 pretrained=pretrained)
 
             print("testing")
-            trained_model.evaluate(test_data)
+            trained_model.evaluate(test_data, args)
 
     elif args.model == "KERAS":
         if args.train_type == "GUTENBERG":
