@@ -2,8 +2,8 @@ from utils import *
 import os
 import random
 
-TRAIN_PATH = "data/C50/C50train"
-TEST_PATH = "data/C50/C50test"
+TRAIN_PATH = "data/C50train"
+TEST_PATH = "data/C50test"
 
 AUTHORS = os.listdir(TRAIN_PATH)
 
