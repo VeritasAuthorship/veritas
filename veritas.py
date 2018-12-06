@@ -142,17 +142,8 @@ if __name__ == "__main__":
         k.train_keras_model(embeddings, train_data, test_data, authors)
 
     elif args.model == "SKLEARN":
-        if args.train_type == "GUTENBERG":
-            train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path)
-
-            sklearn_train(train_data, test_data, authors)
-        elif args.train_type == "SPOOKY":
-            train_data, test_data, authors = spooky_authorship_data()
-
-            sklearn_train(train_data, test_data, authors)
-        elif args.train_type == "REUTERS":
-            sklearn_train(*create_reuters_data())
-
+        data = get_data(args)
+        sklearn_train(*data)
 
     elif args.model == 'VAE':
         if args.train_type == 'SPOOKY':
