@@ -178,7 +178,7 @@ def pos(passage, n=2):
 
     final = []
     for i in range(len(postags) - n):
-        n_gram = sum([postags[i + _i][1] for _i in range(n)])
+        n_gram = "".join([postags[i + _i][1] for _i in range(n)])
         final.append(n_gram)
     return " ".join(final)
 
