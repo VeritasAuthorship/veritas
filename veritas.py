@@ -25,7 +25,7 @@ def arg_parse():
     parser.add_argument('--train_path', type=str, default='data/british/', help='Path to the training set')
     parser.add_argument('--test_path', type=str, default='data/gut-test/british', help='Path to the test set')
     parser.add_argument('--train_options', type=str, default='', help="Extra train options, eg pos tags embeddings")
-
+    parser.add_argument('--sentencewise', type=bool, default=False, help="")
     # Seq-2-Seq args
     parser.add_argument('--reverse_input', type=bool, default=False)
     parser.add_argument("--batch_size", type=int, default=1, help="batch size for encoder training")
@@ -47,25 +47,28 @@ if __name__ == "__main__":
     args = arg_parse()
     print(args)
 
+    assert args.train_type in ["GUTENBERG", "SPOOKY", "REUTERS"]
+
     if args.model == 'BASELINE':
         # Get books from train path and call baselineb model train function
-        if (args.train_type == 'GUTENBERG'):
-            train_data, test_data, num_authors = gutenberg_dataset(args.train_path, args.test_path)
-            print("training")
-            authors = train_baseline(train_data)
-            print("testing")
-            evaluate_baseline(test_data, authors)
-
+        if args.train_type == 'GUTENBERG':
+            data = gutenberg_dataset(args.train_path, args.test_path)
         elif args.train_type == "SPOOKY":
-            train_data, test_data, num_authors = spooky_authorship_data()
-            print("training")
-            authors = train_baseline(train_data)
-            print("testing")
-            evaluate_baseline(test_data, authors)
+            data = spooky_authorship_data()
+        elif args.train_type == "REUTERS":
+            data = create_reuters_data()
+
+        train_data, test_data, authors = sentencewise(data) if args.sentencewise else data
+
+
+        print("training baseline model")
+        baseline_model = train_baseline(train_data)
+        print("testing baseline")
+        baseline_model.evaluate(test_data, args)
 
     elif args.model == 'LSTM':
         if args.train_type == 'GUTENBERG':
-            
+
             if args.train_options == 'POS':
                 pretrained = False
                 train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path, postags=True)
@@ -77,7 +80,7 @@ if __name__ == "__main__":
                 word_indexer.get_index(UNK_SYMBOL)
 
                 word_vectors = WordEmbeddings(word_indexer, None)
-    
+
             else:
                 pretrained = True
                 train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path)
@@ -87,14 +90,14 @@ if __name__ == "__main__":
 
                 relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
                 word_vectors = read_word_embeddings(args.word_vecs_path)
-    
+
             print("Finished extracting embeddings")
             print("training")
 
-            trained_model = train_lstm_model(train_data, test_data, authors, word_vectors, args, pretrained=pretrained)
+            trained_model: AuthorshipModel = train_lstm_model(train_data, test_data, authors, word_vectors, args, pretrained=pretrained)
 
             print("testing")
-            trained_model.evaluate(test_data)
+            trained_model.evaluate(test_data, args)
 
         elif args.train_type == 'SPOOKY':
             train_data, test_data, authors = spooky_authorship_data()
