@@ -6,7 +6,7 @@ import argparse
 import sys
 import models.keras_lstm as k
 
-from models.attention import train_enc_dec_model
+from models.attention import train_lstm_attention_model
 from utils import *
 from gutenberg_data import *
 from spooky_authorship import spooky_authorship_data
@@ -15,7 +15,7 @@ from spooky_authorship import spooky_authorship_data
 from models.baseline import *
 # from models.sklearn_baselines import sklearn_train
 from models.LSTM import *
-from models.attention import train_enc_dec_model
+from models.attention import train_lstm_attention_model
 # sys.path.append("./models")
 from models.baseline import *
 from models.sentence_wise_classification import *
@@ -107,76 +107,30 @@ if __name__ == "__main__":
                                                           pretrained=pretrained)
 
     elif args.model == "LSTM_ATTN":
-        data = get_data()
+        data = get_data(args)
+        train_data, test_data, authors = data
 
-        if args.train_type == 'GUTENBERG':
-            train_data, test_data, authors = gutenberg_dataset(args.train_path, args.test_path)
-            word_indexer = Indexer()
-            add_dataset_features(train_data, word_indexer)
-            add_dataset_features(test_data, word_indexer)
+        word_indexer = Indexer()
+        add_dataset_features(train_data, word_indexer)
+        add_dataset_features(test_data, word_indexer)
 
+        if args.train_options == 'POS':
+            pretrained = False
+            word_indexer.get_index(PAD_SYMBOL)
+            word_indexer.get_index(UNK_SYMBOL)
+            word_vectors = WordEmbeddings(word_indexer, None)
+        else:
+            pretrained = True
             relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
             word_vectors = read_word_embeddings(args.word_vecs_path)
 
-            print("Finished extracting embeddings")
-            print("training")
-            trained_model = train_enc_dec_model(train_data, test_data, authors, word_vectors, args)
+        print("Finished extracting embeddings")
+        print("training")
 
-            print("testing")
-            trained_model.evaluate(test_data, args)
+        trained_model = train_lstm_attention_model(train_data, test_data, authors, word_vectors, args)
 
-        elif args.train_type == "SPOOKY":
-
-            train_data, test_data, authors = spooky_authorship_data()
-            word_indexer = Indexer()
-            add_dataset_features(train_data, word_indexer)
-            add_dataset_features(test_data, word_indexer)
-
-            if args.train_options == 'POS':
-                pretrained = False
-                word_indexer.get_index(PAD_SYMBOL)
-                word_indexer.get_index(UNK_SYMBOL)
-
-                word_vectors = WordEmbeddings(word_indexer, None)
-
-            else:
-                pretrained = True
-                relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
-                word_vectors = read_word_embeddings(args.word_vecs_path)
-
-            print("Finished extracting embeddings")
-            print("training")
-            trained_model = train_enc_dec_model(train_data, test_data, authors, word_vectors, args,
-                                                pretrained=pretrained)
-
-            print("testing")
-            trained_model.evaluate(test_data, args)
-
-        elif args.train_type == "REUTERS":
-            train_data, test_data, authors = create_reuters_data(n_authors=2, articles_per_author=10)
-            word_indexer = Indexer()
-            add_dataset_features(train_data, word_indexer)
-            add_dataset_features(test_data, word_indexer)
-
-            if args.train_options == 'POS':
-                pretrained = False
-                word_indexer.get_index(PAD_SYMBOL)
-                word_indexer.get_index(UNK_SYMBOL)
-
-                word_vectors = WordEmbeddings(word_indexer, None)
-
-            else:
-                pretrained = True
-                relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
-                word_vectors = read_word_embeddings(args.word_vecs_path)
-
-            print("Finished extracting embeddings")
-            print("training")
-            trained_model = train_enc_dec_model(train_data, test_data, authors, word_vectors, args,
-                                                pretrained=pretrained)
-
-            print("testing")
-            trained_model.evaluate(test_data, args)
+        print("testing")
+        trained_model.evaluate(test_data, args)
 
     elif args.model == "KERAS":
         if args.train_type == "GUTENBERG":
