@@ -4,6 +4,7 @@ from nltk import sent_tokenize, word_tokenize
 
 from utils import *
 
+
 def _gutenberg_filename(author, title):
     return "{}__{}.txt".format(author, title)
 
@@ -74,7 +75,7 @@ class GutenbergData:
         authors = Indexer()
 
         for book in self.books:
-            #selected = book.select_passages(n=passages_per_book, length=passage_length, method=passage_type)
+            # selected = book.select_passages(n=passages_per_book, length=passage_length, method=passage_type)
             selected = book.select_passages(n=200, length=1, method=passage_type)
             authors.get_index(book.author)
 
@@ -86,12 +87,14 @@ class GutenbergData:
 
         return examples, authors
 
-def gutenberg_dataset(train_path, test_path, postags=False):
+
+def gutenberg_dataset(train_path, test_path, args, postags=False):
+    postags = args.train_type == "POS" or postags
     gd = GutenbergData().load_from(train_path)
     gd_test = GutenbergData().load_from(test_path)
     train_data, authors = gd.create_dataset(postags=postags)
     test_data, _ = gd_test.create_dataset(passages_per_book=8, postags=postags)
-    #test_data = train_data
+    # test_data = train_data
 
     print("Finished loading data")
 

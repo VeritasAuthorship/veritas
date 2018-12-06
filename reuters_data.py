@@ -18,7 +18,7 @@ def read_file(prefix):
     return _read
 
 
-def create_reuters_data(n_authors=3, articles_per_author=50, test_split=0.3):
+def create_reuters_data(args, n_authors=3, articles_per_author=50, test_split=0.3):
     authors = random.sample(AUTHORS, n_authors)
 
     dataset = []

@@ -3,7 +3,7 @@ from utils import Example, Indexer, pos
 import random
 
 
-def spooky_authorship_data(test_split=0.7, max_char_length=500, postags=False):
+def spooky_authorship_data(args, test_split=0.7, max_char_length=500, postags=False):
     with open("data/spooky-authorship/train.csv") as f:
         train_df = pd.read_csv(f)
 
