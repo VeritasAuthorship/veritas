@@ -136,16 +136,44 @@ class RNNEncoder(nn.Module):
 # SPOOKY Dataset (70-30 split)
 # One run, Glove word embeddings. 4411 / 5827 = 0.75699 with 10 epochs
 
-class LSTMTrainedModel(object):
-    def __init__(self, model, model_emb, indexer, authors, args):
+class LSTMTrainedModel(AuthorshipModel):
+    def __init__(self, model, model_emb, indexer, authors):
         # Add any args you need here
         self.model = model
         self.model_emb = model_emb
         self.word_indexer = indexer
-        self.authors = authors 
-        self.args = args
-    
-    def evaluate(self, test_data):
+        self.authors = authors
+
+    def _predictions(self, test_data, args):
+
+        predictions = []
+        test_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
+
+        with torch.no_grad():
+            self.model.eval()
+            self.model_emb.eval()
+            input_lens = torch.LongTensor(np.asarray([len(word_tokenize(ex.passage)) for ex in test_data]))
+            input_max_len = torch.max(input_lens, dim=0)[0].item()
+            all_test_input_data = torch.LongTensor(make_padded_input_tensor(test_data, self.word_indexer, input_max_len))
+            all_test_output_data = torch.LongTensor(np.asarray([self.authors.index_of(ex.author) for ex in test_data]))
+
+            for idx, X_batch in enumerate(all_test_input_data):
+                print(X_batch)
+                y_batch = all_test_output_data[idx].unsqueeze(0)
+                print(y_batch)
+                input_lens_batch = input_lens[idx].unsqueeze(0).to(device)
+
+                # Get word embeddings
+                embedded_words = self.model_emb.forward(X_batch.unsqueeze(0).to(device)).to(device)
+
+                # Get probability and hidden state
+                probs, hidden = self.model.forward(embedded_words, input_lens_batch)
+
+                predictions.append(torch.argmax(probs.item()))
+
+        return predictions
+
+    def myevaluate(self, test_data, args):
         test_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
 
         with torch.no_grad():
@@ -174,6 +202,8 @@ class LSTMTrainedModel(object):
                     correct += 1
 
         print("Correctness", str(correct) + "/" + str(total) + ": " + str(round(correct/total, 5)))
+
+        return correct, total
 
 
 def train_lstm_model(train_data, test_data, authors, word_vectors, args, pretrained=True):
