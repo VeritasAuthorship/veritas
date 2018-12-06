@@ -87,10 +87,12 @@ if __name__ == "__main__":
     elif args.model == 'LSTM':
         data = get_data(args)
         train_data, test_data, authors = data
+        flattened_test_data = list(itertools.chain(*test_data)) if args.sentencewise else test_data
+
 
         word_indexer = Indexer()
         add_dataset_features(train_data, word_indexer)
-        add_dataset_features(test_data, word_indexer)
+        add_dataset_features(flattened_test_data, word_indexer)
 
         if args.train_options == 'POS':
             pretrained = False
@@ -105,8 +107,9 @@ if __name__ == "__main__":
         print("Finished extracting embeddings")
         print("training")
 
-        trained_model: AuthorshipModel = train_lstm_model(train_data, test_data, authors, word_vectors, args,
+        trained_model: AuthorshipModel = train_lstm_model(train_data, flattened_test_data, authors, word_vectors, args,
                                                           pretrained=pretrained)
+        trained_model.evaluate(test_data, args)
 
     elif args.model == "LSTM_ATTN":
         data = get_data(args)
