@@ -4,7 +4,7 @@
 
 import argparse
 import sys
-import models.keras_lstm as k
+#import models.keras_lstm as k
 
 from models.attention import train_lstm_attention_model
 from utils import *
@@ -22,7 +22,7 @@ from models.sentence_wise_classification import *
 from models.sklearn_baselines import sklearn_train
 from reuters_data import create_reuters_data
 from spooky_authorship import spooky_authorship_data
-from models.vae import *
+#from models.vae import *
 
 
 # Read in command line arguments to the system
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         print("Finished extracting embeddings")
         print("training")
 
-        trained_model = train_lstm_attention_model(train_data, flattened_test_data, authors, word_vectors, args)
+        trained_model = train_lstm_attention_model(train_data, flattened_test_data, authors, word_vectors, args, pretrained=pretrained)
 
         print("testing")
         trained_model.evaluate(test_data, args)
