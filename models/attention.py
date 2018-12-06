@@ -55,12 +55,15 @@ class PretrainedEmbeddingLayer(nn.Module):
 # Average accuracy: 4533/5827 = .778, 8 epochs with 70/30 split, 1-grams of POS tags
 # Average accuracy: 4444/5827: 0.763, 8 epochs with 70/30 split, 2-grams of POS tags
 # Average accuracy: 4673/5827: 0.802, 15 epochs with 70/30 split, 2-grams of POS tags
-
 #-------------------------------
 
 # Gutenberg
 # British authors
 # Average accuracy: 400/2000 = .2 with 200 sentences/book/author, 5 authors (new test)
+
+# -------------------------
+# REUTERS Datset
+# Accuracy:  43/45 = 0.956, 8 epochs, 3 authors, 50 articles / author, 70/30 train/test split
 
 class AttentionRNNEncoder(nn.Module):
     # Parameters: input size (should match embedding layer), hidden size for the LSTM, dropout rate for the RNN,
