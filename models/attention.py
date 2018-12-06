@@ -226,7 +226,7 @@ def _example(input_tensor, output_tensor, input_lens_tensor,
     return loss.item()
 
 
-class EncDecTrainedModel(object):
+class EncDecTrainedModel(AuthorshipModel):
     def __init__(self, encoder, input_emb, decoder, output_emb, input_indexer, output_indexer, args, max_len):
         # Add any args you need here
         self.encoder = encoder
