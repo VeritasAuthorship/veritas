@@ -271,4 +271,4 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args, pretrai
         
         print("Epoch " + str(epoch) + " Loss:", epoch_loss)
     
-    return LSTMTrainedModel(encoder, model_emb, word_indexer, authors, args)
+    return LSTMTrainedModel(encoder, model_emb, word_indexer, authors)
