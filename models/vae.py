@@ -196,7 +196,7 @@ class VAE(nn.Module):
         z = dist.Normal(z_loc, z_scale).sample()
         return z
 
-class VAERNNTrainedModel(object):
+class VAERNNTrainedModel(AuthorshipModel):
     def __init__(self, vae, input_emb, decoder, input_indexer, output_indexer, args, max_len):
         # Add any args you need here
         self.vae_encoder = vae
@@ -207,7 +207,29 @@ class VAERNNTrainedModel(object):
         self.args = args
         self.max_len = max_len
 
-    def evaluate(self, test_data):
+    def _predictions(self, test_data, args):
+        test_data.sort(key=lambda ex: len(word_tokenize(ex.passage)))
+        all_test_input_data = torch.LongTensor(make_padded_input_tensor(test_data, self.input_indexer, self.max_len))
+        all_test_output_data = torch.LongTensor(np.asarray([self.output_indexer.index_of(ex.author) for ex in test_data]))
+
+        correct = 0
+        total = len(all_test_input_data)
+        predictions = []
+        for idx, X_batch in enumerate(all_test_input_data):
+            X_batch = X_batch.to(device)
+            y_batch = all_test_output_data[idx].unsqueeze(0).to(device)
+
+            embedded_words = self.input_emb.forward(X_batch.unsqueeze(0).to(device)).to(device)
+
+            z = self.vae_encoder.forward(embedded_words).unsqueeze(0).to(device)
+            # Get probability and hidden state
+            probs, hidden = self.decoder.forward(z)
+
+            predictions.append(torch.argmax(probs).item())
+
+        return predictions
+
+    def myevaluate(self, test_data, args):
         test_data.sort(key=lambda ex: len(word_tokenize(ex.passage)))
         all_test_input_data = torch.LongTensor(make_padded_input_tensor(test_data, self.input_indexer, self.max_len))
         all_test_output_data = torch.LongTensor(np.asarray([self.output_indexer.index_of(ex.author) for ex in test_data]))
