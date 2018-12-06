@@ -30,6 +30,7 @@ def create_reuters_data(args, n_authors=3, articles_per_author=50, test_split=0.
 
         dataset.extend(map(lambda a: Example(a, author), article_bodies))
 
+    random.shuffle(dataset)
     split = int((1 - test_split) * len(dataset))
 
     authors_index = Indexer()
