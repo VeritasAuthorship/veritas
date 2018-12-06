@@ -133,8 +133,8 @@ def read_word_embeddings(embeddings_file):
 
 # Relativize the word vectors to the training set
 def relativize(file, outfile, indexer):
-    f = open(file)
-    o = open(outfile, 'w')
+    f = open(file, encoding='utf-8')
+    o = open(outfile, 'w', encoding='utf-8')
     voc = []
 
     for line in f:

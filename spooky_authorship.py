@@ -4,7 +4,7 @@ import random
 
 
 def spooky_authorship_data(args, test_split=0.7, max_char_length=500, postags=False):
-    with open("data/spooky-authorship/train.csv") as f:
+    with open("data/spooky-authorship/train.csv", encoding='utf-8') as f:
         train_df = pd.read_csv(f)
 
     train_df.applymap(lambda s: s[1:-1] if s.startswith("\"") else s)

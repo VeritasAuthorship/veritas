@@ -20,9 +20,9 @@ from models.attention import train_lstm_attention_model
 from models.baseline import *
 from models.sentence_wise_classification import *
 from models.sklearn_baselines import sklearn_train
-from reuters_data import create_reuters_data
+#from reuters_data import create_reuters_data
 from spooky_authorship import spooky_authorship_data
-#from models.vae import *
+from models.vae import *
 
 
 # Read in command line arguments to the system
@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
     elif args.model == 'VAE':
         if args.train_type == 'SPOOKY':
-            train_data, test_data, authors = spooky_authorship_data()
+            train_data, test_data, authors = spooky_authorship_data(args)
             word_indexer = Indexer()
             add_dataset_features(train_data, word_indexer)
             add_dataset_features(test_data, word_indexer)
