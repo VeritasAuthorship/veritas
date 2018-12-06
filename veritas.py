@@ -43,23 +43,27 @@ def arg_parse():
     return args
 
 
+def get_data(args):
+    assert args.train_type in ["GUTENBERG", "SPOOKY", "REUTERS"]
+    if args.train_type == 'GUTENBERG':
+        data = gutenberg_dataset(args.train_path, args.test_path)
+    elif args.train_type == "SPOOKY":
+        data = spooky_authorship_data()
+    elif args.train_type == "REUTERS":
+        data = create_reuters_data()
+
+    return data
+
+
 if __name__ == "__main__":
     args = arg_parse()
     print(args)
 
-    assert args.train_type in ["GUTENBERG", "SPOOKY", "REUTERS"]
 
     if args.model == 'BASELINE':
         # Get books from train path and call baselineb model train function
-        if args.train_type == 'GUTENBERG':
-            data = gutenberg_dataset(args.train_path, args.test_path)
-        elif args.train_type == "SPOOKY":
-            data = spooky_authorship_data()
-        elif args.train_type == "REUTERS":
-            data = create_reuters_data()
-
+        data = get_data(args)
         train_data, test_data, authors = sentencewise(data) if args.sentencewise else data
-
 
         print("training baseline model")
         baseline_model = train_baseline(train_data)
@@ -94,7 +98,8 @@ if __name__ == "__main__":
             print("Finished extracting embeddings")
             print("training")
 
-            trained_model: AuthorshipModel = train_lstm_model(train_data, test_data, authors, word_vectors, args, pretrained=pretrained)
+            trained_model: AuthorshipModel = train_lstm_model(train_data, test_data, authors, word_vectors, args,
+                                                              pretrained=pretrained)
 
             print("testing")
             trained_model.evaluate(test_data, args)
@@ -154,7 +159,8 @@ if __name__ == "__main__":
 
             print("Finished extracting embeddings")
             print("training")
-            trained_model = train_enc_dec_model(train_data, test_data, authors, word_vectors, args, pretrained=pretrained)
+            trained_model = train_enc_dec_model(train_data, test_data, authors, word_vectors, args,
+                                                pretrained=pretrained)
 
             print("testing")
             trained_model.evaluate(test_data)
@@ -179,7 +185,8 @@ if __name__ == "__main__":
 
             print("Finished extracting embeddings")
             print("training")
-            trained_model = train_enc_dec_model(train_data, test_data, authors, word_vectors, args, pretrained=pretrained)
+            trained_model = train_enc_dec_model(train_data, test_data, authors, word_vectors, args,
+                                                pretrained=pretrained)
 
             print("testing")
             trained_model.evaluate(test_data)
