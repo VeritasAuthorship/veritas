@@ -185,7 +185,7 @@ def _predict(decoder, enc_output_each_word, enc_hidden, output_indexer, model_ou
 
     predicted = torch.argmax(decoder_output)
 
-    return predicted
+    return predicted, decoder_output
 
 
 def _run_decoder(decoder, enc_output_each_word, enc_hidden, output_tensor,
@@ -251,6 +251,7 @@ class EncDecTrainedModel(AuthorshipModel):
             np.asarray([self.output_indexer.index_of(ex.author) for ex in test_data]))
 
         predictions = []
+        probabilities = []
         for idx, X_batch in enumerate(all_test_input_data):
             X_batch = X_batch.unsqueeze(0).to(device)
             y_batch = all_test_output_data[idx].unsqueeze(0).to(device)
@@ -259,11 +260,20 @@ class EncDecTrainedModel(AuthorshipModel):
             enc_output_each_word, enc_context_mask, enc_hidden = \
                 _run_encoder(X_batch, input_lens_batch, self.input_emb, self.encoder)
 
-            prediction = _predict(self.decoder, enc_output_each_word, enc_hidden, self.output_indexer, self.output_emb)
+            prediction, d_out = _predict(self.decoder, enc_output_each_word, enc_hidden, self.output_indexer, self.output_emb)
 
             predictions.append(self.output_indexer.get_object(prediction.item()))
-
-        return predictions
+            probabilities.append([i for i in d_out])
+        ids = [ex.id for ex in test_data]
+        # probabilities = clf.predict_proba(vectorizer.transform(test_texts))
+        if args.kaggle and args.train_type == "SPOOKY":
+            with open("kaggle_out.csv", "w") as f:
+                classes = ["id"] + [self.output_indexer.get_object(i) for i in range(len(self.output_indexer))]
+                f.write(",".join(classes) + "\n")
+                for id, probs in list(zip(ids, probabilities)):
+                    probs = [str(i) for i in probs]
+                    f.write(id + "," + ",".join(probs) + "\n")
+            return predictions
 
     def myevaluate(self, test_data, args):
         test_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
