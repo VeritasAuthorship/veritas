@@ -22,7 +22,7 @@ from models.sentence_wise_classification import *
 from models.sklearn_baselines import sklearn_train
 #from reuters_data import create_reuters_data
 from spooky_authorship import spooky_authorship_data
-from models.vae import *
+# from models.vae import *
 
 
 # Read in command line arguments to the system
@@ -34,7 +34,7 @@ def arg_parse():
     parser.add_argument('--test_path', type=str, default='data/gut-test/british', help='Path to the test set')
     parser.add_argument('--train_options', type=str, default='', help="Extra train options, eg pos tags embeddings")
     parser.add_argument('--sentencewise', type=bool, default=False, help="")
-    # Seq-2-Seq args
+    parser.add_argument('--kaggle', type=bool, default=False, help="")
 
     # Encoder-Decoder, VAE-RNN args
     parser.add_argument('--reverse_input', type=bool, default=False)
@@ -145,8 +145,8 @@ if __name__ == "__main__":
         k.train_keras_model(embeddings, train_data, test_data, authors)
 
     elif args.model == "SKLEARN":
-        data = get_data(args)
-        sklearn_train(*data)
+        train_data, test_data, authors = data = get_data(args)
+        sklearn_train(train_data, test_data, authors, args)
 
     elif args.model == 'VAE':
         if args.train_type == 'SPOOKY':

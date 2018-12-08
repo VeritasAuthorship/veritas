@@ -184,9 +184,10 @@ def pos(passage, n=2):
 
 
 class Example:
-    def __init__(self, passage, author):
+    def __init__(self, passage, author, id=None):
         self.passage = passage
         self.author = author
+        self.id = id
 
 
 class AuthorshipModel:
