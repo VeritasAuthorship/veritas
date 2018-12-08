@@ -263,7 +263,7 @@ class EncDecTrainedModel(AuthorshipModel):
             prediction, d_out = _predict(self.decoder, enc_output_each_word, enc_hidden, self.output_indexer, self.output_emb)
 
             predictions.append(self.output_indexer.get_object(prediction.item()))
-            probabilities.append([i for i in d_out])
+            probabilities.append([i for i in d_out[0]][:-1])
         ids = [ex.id for ex in test_data]
         # probabilities = clf.predict_proba(vectorizer.transform(test_texts))
         if args.kaggle and args.train_type == "SPOOKY":
