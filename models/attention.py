@@ -263,12 +263,12 @@ class EncDecTrainedModel(AuthorshipModel):
             prediction, d_out = _predict(self.decoder, enc_output_each_word, enc_hidden, self.output_indexer, self.output_emb)
 
             predictions.append(self.output_indexer.get_object(prediction.item()))
-            probabilities.append([i for i in d_out[0]][:-1])
+            probabilities.append([np.exp(i) for i in d_out[0]][:-1])
         ids = [ex.id for ex in test_data]
         # probabilities = clf.predict_proba(vectorizer.transform(test_texts))
         if args.kaggle and args.train_type == "SPOOKY":
             with open("kaggle_out.csv", "w") as f:
-                classes = ["id"] + [self.output_indexer.get_object(i) for i in range(len(self.output_indexer))]
+                classes = ["id"] + [self.output_indexer.get_object(i) for i in range(len(self.output_indexer) - 1)]
                 f.write(",".join(classes) + "\n")
                 for id, probs in list(zip(ids, probabilities)):
                     probs = [str(i) for i in probs]
