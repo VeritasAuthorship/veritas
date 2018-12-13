@@ -9,6 +9,7 @@ import sys
 from models.attention import train_lstm_attention_model
 from models.gru_attention import train_gru_attention_model
 from models.du_attn_classifier import train_du_attention_model
+from models.du_attn_classifier_lstm import train_du_attention_model_lstm
 from utils import *
 from gutenberg_data import *
 from spooky_authorship import spooky_authorship_data
@@ -194,6 +195,35 @@ if __name__ == "__main__":
         print("training")
 
         trained_model = train_du_attention_model(train_data, flattened_test_data, authors, word_vectors, args, pretrained=pretrained)
+
+        print("testing")
+        trained_model.evaluate(test_data, args)
+
+    elif args.model == "DU_ATTN_LSTM":
+        data = get_data(args)
+        train_data, test_data, authors = data
+
+        flattened_test_data = list(itertools.chain(*test_data)) if args.sentencewise else test_data
+
+        word_indexer = Indexer()
+        add_dataset_features(train_data, word_indexer)
+        add_dataset_features(flattened_test_data, word_indexer)
+
+        if args.train_options == 'POS':
+            print("USING POS EMBEDDINGS")
+            pretrained = False
+            word_indexer.get_index(PAD_SYMBOL)
+            word_indexer.get_index(UNK_SYMBOL)
+            word_vectors = WordEmbeddings(word_indexer, None)
+        else:
+            pretrained = True
+            relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
+            word_vectors = read_word_embeddings(args.word_vecs_path)
+
+        print("Finished extracting embeddings")
+        print("training")
+
+        trained_model = train_du_attention_model_lstm(train_data, flattened_test_data, authors, word_vectors, args, pretrained=pretrained)
 
         print("testing")
         trained_model.evaluate(test_data, args)
