@@ -12,7 +12,7 @@ def spooky_authorship_data(args, test_split=0.7, max_char_length=500, postags=Fa
     print("Spooky Authorship Dataset:")
     print("   ", "authors: ", set(train_df["author"]))
 
-    if postags:
+    if postags or args.train_options == "POS":
         examples = [Example(pos(passage), author) for passage, author in zip(train_df["text"], train_df["author"]) if len(passage) <= max_char_length]
 
     else:

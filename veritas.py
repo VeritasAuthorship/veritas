@@ -180,6 +180,7 @@ if __name__ == "__main__":
         add_dataset_features(flattened_test_data, word_indexer)
 
         if args.train_options == 'POS':
+            print("USING POS EMBEDDINGS")
             pretrained = False
             word_indexer.get_index(PAD_SYMBOL)
             word_indexer.get_index(UNK_SYMBOL)

@@ -170,16 +170,37 @@ def make_output_one_hot_tensor(exs, output_indexer):
     return np.array(result)
 
 
-def pos(passage, n=2):
+pos_fancy = """CC
+DT
+EX
+FW
+IN
+MD
+PDT
+RB
+
+
+WDT
+WP
+WP$
+WRB""".split("\n")
+##RBR
+#RBS
+##
+def pos(passage, n=2, fancy=True):
     # tokenize = RegexpTokenizer(r'\w+')
     # words = tokenize.tokenize(passage)
     words = word_tokenize(passage)
     postags = pos_tag(words)
 
+    postags_ = [("", word.lower()) if pos_tag[1] in pos_fancy else pos_tag for word, pos_tag in zip(words, postags)]
+
     final = []
     for i in range(len(postags) - n):
-        n_gram = "".join([postags[i + _i][1] for _i in range(n)])
+        n_gram = "".join([postags_[i + _i][1] for _i in range(n)])
         final.append(n_gram)
+
+
     return " ".join(final)
 
 
