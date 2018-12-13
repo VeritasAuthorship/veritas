@@ -192,7 +192,7 @@ if __name__ == "__main__":
         print("Finished extracting embeddings")
         print("training")
 
-        trained_model = train_gru_attention_model(train_data, flattened_test_data, authors, word_vectors, args, pretrained=pretrained)
+        trained_model = train_du_attention_model(train_data, flattened_test_data, authors, word_vectors, args, pretrained=pretrained)
 
         print("testing")
         trained_model.evaluate(test_data, args)

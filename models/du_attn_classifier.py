@@ -168,14 +168,22 @@ class AttentionRNNDecoder(nn.Module):
 
         # Neural Model
         # self.gru = nn.GRU(hidden_size, hidden_size, num_layers=1, batch_first=True)
-        self.out = nn.Linear(hidden_size, output_size)
+        self.out = nn.Linear(real_hidden, output_size)
         self.softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, enc_outputs):
-        compute_attention = torch.sum(enc_outputs * F.softmax(torch.matmul(F.tanh(self.attention(enc_outputs)), self.context)), dim=0)
+        apply_attention = self.attention(enc_outputs)
+        tanh_attention = F.tanh(apply_attention)
+
+        multiplied = torch.matmul(tanh_attention, self.context)
+        soft_multiplied = F.softmax(multiplied)
+
+        apply_context = enc_outputs * soft_multiplied
+        averaged = torch.sum(apply_context, dim=0)
+        # compute_attention = torch.sum(enc_outputs * F.softmax(torch.matmul(F.tanh(self.attention(enc_outputs)), self.context)), dim=0)
 
 
-        return F.softmax(self.out(compute_attention))
+        return self.softmax(self.out(averaged))
 
 
 
@@ -205,8 +213,6 @@ def _run_encoder(x_tensor, inp_lens_tensor, model_input_emb, model_enc):
     enc_final_states_reshaped = enc_final_states.unsqueeze(0).to(device)#, enc_final_states[1].unsqueeze(0).to(device)
     return enc_output_each_word, enc_context_mask, enc_final_states_reshaped
 
-def _run_attention(attention, enc_hidden_states):
-    return
 
 def _predict(decoder, enc_output_each_word, enc_hidden, output_indexer, model_output_emb):
     # decoder_input = torch.tensor([[output_indexer.index_of(SOS_SYMBOL)]]).to(device)
@@ -260,7 +266,6 @@ def _example(input_tensor, output_tensor, input_lens_tensor,
     for opt in optimizers:
         opt.zero_grad()
 
-    prediction, loss = _run_attention()
     # Run decoder, get loss
     prediction, loss = _run_decoder(decoder, enc_output_each_word, enc_hidden, output_tensor,
                                     loss_function, output_indexer, model_output_emb)
