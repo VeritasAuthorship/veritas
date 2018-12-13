@@ -55,6 +55,8 @@ class PretrainedEmbeddingLayer(nn.Module):
 # Average accuracy: 4533/5827 = .778, 8 epochs with 70/30 split, 1-grams of POS tags
 # Average accuracy: 4444/5827: 0.763, 8 epochs with 70/30 split, 2-grams of POS tags
 # Average accuracy: 4673/5827: 0.802, 15 epochs with 70/30 split, 2-grams of POS tags
+
+# Correctness: 4569/5827 -> 0.7841084606143813 8 epochs, 70/30 split
 #-------------------------------
 
 # Gutenberg
