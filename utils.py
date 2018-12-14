@@ -170,26 +170,50 @@ def make_output_one_hot_tensor(exs, output_indexer):
     return np.array(result)
 
 
-def pos(passage, n=2):
+pos_fancy = """CC
+DT
+EX
+FW
+IN
+MD
+PDT
+RB
+
+
+WDT
+WP
+WP$
+WRB""".split("\n")
+##RBR
+#RBS
+##
+def pos(passage, n=2, fancy=True):
     # tokenize = RegexpTokenizer(r'\w+')
     # words = tokenize.tokenize(passage)
     words = word_tokenize(passage)
     postags = pos_tag(words)
 
+    postags_ = [("", word.lower()) if pos_tag[1] in pos_fancy else pos_tag for word, pos_tag in zip(words, postags)]
+
     final = []
     for i in range(len(postags) - n):
-        n_gram = "".join([postags[i + _i][1] for _i in range(n)])
+        n_gram = "".join([postags_[i + _i][1] for _i in range(n)])
         final.append(n_gram)
+
+
     return " ".join(final)
 
 
 class Example:
-    def __init__(self, passage, author):
+    def __init__(self, passage, author, id=None):
         self.passage = passage
         self.author = author
+        self.id = id
 
 
 class AuthorshipModel:
+    def __init__(self):
+        self.history = None
 
     def _predictions(self, test_data, args):
         pass
@@ -219,4 +243,35 @@ class AuthorshipModel:
                     print(test_data[i].passage)
 
         print("Correctness: " + str(correct) + "/" + str(len(test_data)), "->", correct / len(test_data))
+
+        if args.plot:
+        #     self.plot(args)
+
+            import datetime
+            import pickle
+            # plt.xlabel("# Epochs")
+            # plt.ylabel("Loss")
+            # plt.plot(list(range(len(self.history))), self.history)
+
+
+            filename = args.model + "_" + args.train_type + "_" + args.train_options + "_" + str(datetime.datetime.now()) + ".pdf"
+            with open(filename, "wb") as f:
+                pickle.dump((self.history, correct, len(test_data)), f)
+
         return correct, len(test_data)
+
+    def plot(self, args):
+        # import matplotlib as mpl
+        # mpl.use('TkAgg')
+        # import matplotlib.pyplot as plt
+        import datetime
+        import pickle
+        # plt.xlabel("# Epochs")
+        # plt.ylabel("Loss")
+        # plt.plot(list(range(len(self.history))), self.history)
+
+        filename = args.model + "_" + args.train_type + "_" + args.train_options + "_" + str(datetime.datetime.now()) + ".pdf"
+        with open(filename) as f:
+            pickle.dump((self.history, self.correct, self.incorrect))
+
+        # plt.savefig(args.model + ", " + args.train_type + ", " + args.train_options + ", " + str(datetime.datetime.now()) + ".pdf")

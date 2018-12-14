@@ -55,6 +55,8 @@ class PretrainedEmbeddingLayer(nn.Module):
 # Average accuracy: 4533/5827 = .778, 8 epochs with 70/30 split, 1-grams of POS tags
 # Average accuracy: 4444/5827: 0.763, 8 epochs with 70/30 split, 2-grams of POS tags
 # Average accuracy: 4673/5827: 0.802, 15 epochs with 70/30 split, 2-grams of POS tags
+
+# Correctness: 4569/5827 -> 0.7841084606143813 8 epochs, 70/30 split
 #-------------------------------
 
 # Gutenberg
@@ -74,9 +76,9 @@ class AttentionRNNEncoder(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.reduce_h_W = nn.Linear(hidden_size * 2, hidden_size, bias=True)
-        self.reduce_c_W = nn.Linear(hidden_size * 2, hidden_size, bias=True)
-        self.rnn = nn.LSTM(input_size, hidden_size, num_layers=1, batch_first=True,
-                           dropout=dropout, bidirectional=self.bidirect)
+        # self.reduce_c_W = nn.Linear(hidden_size * 2, hidden_size, bias=True)
+        self.rnn = nn.GRU(input_size, hidden_size, num_layers=1, batch_first=True,
+                          dropout=dropout, bidirectional=self.bidirect)
         self.init_weight()
 
     # Initializes weight matrices using Xavier initialization
@@ -119,18 +121,27 @@ class AttentionRNNEncoder(nn.Module):
         # Note: if you want multiple LSTM layers, you'll need to change this to consult the penultimate layer
         # or gather representations from all layers.
         if self.bidirect:
-            h, c = hn[0], hn[1]
-            # Grab the representations from forward and backward LSTMs
-            h_, c_ = torch.cat((h[0], h[1]), dim=1), torch.cat((c[0], c[1]), dim=1)
-            # Reduce them by multiplying by a weight matrix so that the hidden size sent to the decoder is the same
-            # as the hidden size in the encoder
+            h = hn
+            h_ = torch.cat((h[0], h[1]), dim=1)
             new_h = self.reduce_h_W(h_)
-            new_c = self.reduce_c_W(c_)
-            h_t = (new_h, new_c)
+            h_t = new_h
         else:
-            h, c = hn[0][0], hn[1][0]
-            h_t = (h, c)
-        return (output, context_mask, h_t)
+            h = hn[0]
+            h_t = h
+
+        # if self.bidirect:
+        #     h, c = hn[0], hn[1]
+        #     # Grab the representations from forward and backward LSTMs
+        #     h_, c_ = torch.cat((h[0], h[1]), dim=1), torch.cat((c[0], c[1]), dim=1)
+        #     # Reduce them by multiplying by a weight matrix so that the hidden size sent to the decoder is the same
+        #     # as the hidden size in the encoder
+        #     new_h = self.reduce_h_W(h_)
+        #     new_c = self.reduce_c_W(c_)
+        #     h_t = (new_h, new_c)
+        # else:
+        #     h, c = hn[0][0], hn[1][0]
+        #     h_t = (h, c)
+        return output, context_mask, h_t
 
 
 class AttentionRNNDecoder(nn.Module):
@@ -143,45 +154,78 @@ class AttentionRNNDecoder(nn.Module):
         self.output_size = output_size
 
         # Bahdanau Attention Mechanism
-        self.attention = nn.Linear(self.hidden_size + self.embedding_dim, max_length)
-        self.attention_combine = nn.Linear((2 if args.bidirectional else 1) * self.hidden_size + self.embedding_dim,
-                                           hidden_size)
+        # self.attention = nn.Linear(self.hidden_size + self.embedding_dim, max_length)
+        # self.attention_combine = nn.Linear((2 if args.bidirectional else 1) * self.hidden_size + self.embedding_dim,
+        #                                    hidden_size)
+
+        # self.attention = nn.Linear(self.embedding_dim, max_length)
+        # self.attention_combine = nn.Linear((2 if args.bidirectional else 1) * self.hidden_size + self.embedding_dim,
+        #                            hidden_size)
+
+        real_hidden = (2 if args.bidirectional else 1) * self.hidden_size
+
+        self.attention = nn.Linear(real_hidden, real_hidden)
+        self.context = nn.Parameter(torch.FloatTensor(real_hidden, 1))
+        nn.init.xavier_normal(self.context)
 
         # Neural Model
-        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers=1, batch_first=True)
-        self.out = nn.Linear(hidden_size, output_size)
+        # self.gru = nn.GRU(hidden_size, hidden_size, num_layers=1, batch_first=True)
+        self.out = nn.Linear(real_hidden, output_size)
         self.softmax = nn.LogSoftmax(dim=1)
 
-    def forward(self, start_token, hidden, enc_outputs):
-        seq_len = enc_outputs.shape[0]
-        concat = torch.cat((start_token[0], hidden[0][0]), 1)
-        attention_weights = F.softmax(self.attention(concat)[:, :seq_len], dim=1)
+    def forward(self, enc_outputs):
+        apply_attention = self.attention(enc_outputs)
+        tanh_attention = F.tanh(apply_attention)
 
-        attention_applied = torch.bmm(attention_weights.unsqueeze(0), enc_outputs.squeeze(1).unsqueeze(0))
+        multiplied = torch.matmul(tanh_attention, self.context)
+        soft_multiplied = F.softmax(multiplied)
 
-        output = torch.cat((start_token[0], attention_applied[0]), 1)
-        output = self.attention_combine(output).unsqueeze(0)
-        output = F.tanh(output)
+        apply_context = enc_outputs * soft_multiplied
+        averaged = torch.sum(apply_context, dim=0)
+        # compute_attention = torch.sum(enc_outputs * F.softmax(torch.matmul(F.tanh(self.attention(enc_outputs)), self.context)), dim=0)
 
-        output, hidden = self.lstm(output, hidden)
-        output = self.softmax(self.out(output[0]))
-        return output, hidden
+
+        return self.softmax(self.out(averaged))
+
+
+
+
+
+
+
+
+        # seq_len = enc_outputs.shape[0]
+        # concat = torch.cat((start_token[0], hidden[0]), 1)
+        # attention_weights = F.softmax(self.attention(concat)[:, :seq_len], dim=1)
+        #
+        # attention_applied = torch.bmm(attention_weights.unsqueeze(0), enc_outputs.squeeze(1).unsqueeze(0))
+        #
+        # output = torch.cat((start_token[0], attention_applied[0]), 1)
+        # output = self.attention_combine(output).unsqueeze(0)
+        # output = F.tanh(output)
+        #
+        # # output, hidden = self.gru(output, hidden)
+        # output = self.softmax(self.out(output[0]))
+        # return output, hidden
 
 
 def _run_encoder(x_tensor, inp_lens_tensor, model_input_emb, model_enc):
     input_emb = model_input_emb.forward(x_tensor)
     enc_output_each_word, enc_context_mask, enc_final_states = model_enc.forward(input_emb, inp_lens_tensor)
-    enc_final_states_reshaped = enc_final_states[0].unsqueeze(0).to(device), enc_final_states[1].unsqueeze(0).to(device)
+    enc_final_states_reshaped = enc_final_states.unsqueeze(0).to(device)#, enc_final_states[1].unsqueeze(0).to(device)
     return enc_output_each_word, enc_context_mask, enc_final_states_reshaped
 
 
 def _predict(decoder, enc_output_each_word, enc_hidden, output_indexer, model_output_emb):
-    decoder_input = torch.tensor([[output_indexer.index_of(SOS_SYMBOL)]]).to(device)
-    decoder_hidden = enc_hidden
+    # decoder_input = torch.tensor([[output_indexer.index_of(SOS_SYMBOL)]]).to(device)
+    # decoder_hidden = enc_hidden
 
     # run decoder, only once to get author classification
-    token_embedding = model_output_emb.forward(decoder_input)
-    decoder_output, decoder_hidden = decoder.forward(token_embedding, decoder_hidden, enc_output_each_word)
+    # token_embedding = model_output_emb.forward(decoder_input)
+    # decoder_output, decoder_hidden = decoder.forward(token_embedding, decoder_hidden, enc_output_each_word)
+
+    decoder_output = decoder.forward(enc_output_each_word)
+    decoder_output.to(device)
 
     predicted = torch.argmax(decoder_output)
 
@@ -194,9 +238,17 @@ def _run_decoder(decoder, enc_output_each_word, enc_hidden, output_tensor,
     decoder_hidden = enc_hidden
 
     # run decoder, only once to get author classification
-    token_embedding = model_output_emb.forward(decoder_input).to(device)
-    decoder_output, decoder_hidden = decoder.forward(token_embedding, decoder_hidden, enc_output_each_word)
-    decoder_output = decoder_output.to(device)
+    # token_embedding = model_output_emb.forward(decoder_input).to(device)
+    # decoder_output, decoder_hidden = decoder.forward(token_embedding, decoder_hidden, enc_output_each_word)
+    # decoder_output = decoder_output.to(device)
+
+    decoder_output = decoder.forward(enc_output_each_word)
+    decoder_output.to(device)
+
+    predicted = torch.argmax(decoder_output)
+
+    # return predicted, decoder_output
+
 
     # loss w.r.t. true author
     loss = loss_function(decoder_output, output_tensor)
@@ -210,8 +262,7 @@ def _example(input_tensor, output_tensor, input_lens_tensor,
              encoder, decoder, model_input_emb, model_output_emb,
              optimizers, loss_function, input_indexer, output_indexer):
     # Run encoder
-    enc_output_each_word, enc_context_mask, enc_hidden = \
-        _run_encoder(input_tensor, input_lens_tensor, model_input_emb, encoder)
+    enc_output_each_word, enc_context_mask, enc_hidden = _run_encoder(input_tensor, input_lens_tensor, model_input_emb, encoder)
 
     # zero grad
     for opt in optimizers:
@@ -229,10 +280,9 @@ def _example(input_tensor, output_tensor, input_lens_tensor,
     return loss.item()
 
 
-class EncDecTrainedModel(AuthorshipModel):
+class DuAttentionModel(AuthorshipModel):
     def __init__(self, encoder, input_emb, decoder, output_emb, input_indexer, output_indexer, args, max_len, history=None):
         # Add any args you need here
-        super(EncDecTrainedModel, self).__init__()
         self.encoder = encoder
         self.decoder = decoder
         self.input_emb = input_emb
@@ -304,7 +354,7 @@ class EncDecTrainedModel(AuthorshipModel):
         print("Correctness", str(correct) + "/" + str(total) + ": " + str(round(correct / total, 5)))
 
 
-def train_lstm_attention_model(train_data, test_data, authors, word_vectors, args, pretrained=True):
+def train_du_attention_model(train_data, test_data, authors, word_vectors, args, pretrained=True):
     train_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
     word_indexer = word_vectors.word_indexer
 
@@ -371,4 +421,4 @@ def train_lstm_attention_model(train_data, test_data, authors, word_vectors, arg
         # if epoch == 0:
         #EncDecTrainedModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len).evaluate(test_data)
 
-    return EncDecTrainedModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len, loss_history)
+    return DuAttentionModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len, loss_history)

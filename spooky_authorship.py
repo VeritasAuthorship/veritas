@@ -12,17 +12,25 @@ def spooky_authorship_data(args, test_split=0.7, max_char_length=500, postags=Fa
     print("Spooky Authorship Dataset:")
     print("   ", "authors: ", set(train_df["author"]))
 
-    if postags:
-        examples = [Example(pos(passage), author) for passage, author in zip(train_df["text"], train_df["author"]) if len(passage) <= max_char_length][:100]
+    if postags or args.train_options == "POS":
+        examples = [Example(pos(passage), author) for passage, author in zip(train_df["text"], train_df["author"]) if len(passage) <= max_char_length]
 
     else:
-        examples = [Example(passage, author) for passage, author in zip(train_df["text"], train_df["author"]) if len(passage) <= max_char_length][:100]
+        examples = [Example(passage, author, id) for passage, author, id in zip(train_df["text"], train_df["author"], train_df["id"]) if len(passage) <= max_char_length]
 
     random.shuffle(examples)
-    test_idx = int(test_split * len(examples))
 
-    train_exs = examples[:test_idx]
-    test_exs = examples[test_idx:]
+    if args.kaggle:
+        train_exs = examples
+        with open("data/spooky-authorship/test.csv") as f:
+            test_df = pd.read_csv(f)
+            test_df.applymap(lambda s: s[1:-1] if s.startswith("\"") else s)
+            test_exs = [Example(passage, "<UNK>", id) for passage, id in zip(test_df["text"], test_df["id"])]
+    else:
+
+        test_idx = int(test_split * len(examples))
+        train_exs = examples[:test_idx]
+        test_exs = examples[test_idx:]
 
     authors = Indexer()
 
@@ -30,7 +38,3 @@ def spooky_authorship_data(args, test_split=0.7, max_char_length=500, postags=Fa
         authors.get_index(author)
 
     return train_exs, test_exs, authors
-
-
-if __name__ == '__main__':
-    spooky_authorship_data()

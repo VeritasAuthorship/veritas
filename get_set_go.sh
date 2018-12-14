@@ -20,5 +20,5 @@ else
     echo "finished downloading reuters dataset..."
 fi
 
-
+python setup.py
 
