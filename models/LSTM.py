@@ -135,15 +135,17 @@ class RNNEncoder(nn.Module):
 #-------------------------------------------------------------
 # SPOOKY Dataset (70-30 split)
 # One run, Glove word embeddings. 4411 / 5827 = 0.75699 with 10 epochs
+# REUTERS:
+# Correctness: 140/150 -> 0.9333333333333333
 
 class LSTMTrainedModel(AuthorshipModel):
-    def __init__(self, model, model_emb, indexer, authors):
+    def __init__(self, model, model_emb, indexer, authors, history=None):
         # Add any args you need here
         self.model = model
         self.model_emb = model_emb
         self.word_indexer = indexer
         self.authors = authors
-
+        self.history = history
     def _predictions(self, test_data, args):
 
         predictions = []
@@ -241,6 +243,8 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args, pretrai
     encoder.train()
     model_emb.train()
 
+    loss_history = []
+
     for epoch in range(num_epochs):
 
         epoch_loss = 0
@@ -257,7 +261,7 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args, pretrai
 
             # Get word embeddings
             embedded_words = model_emb.forward(X_batch.unsqueeze(0).to(device)).to(device)
-            
+
             # Get probability and hidden state
             probs, hidden = encoder.forward(embedded_words, input_lens_batch)
             #print(probs)
@@ -268,7 +272,8 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args, pretrai
             # Run backward
             loss.backward()
             optimizer.step()
-        
         print("Epoch " + str(epoch) + " Loss:", epoch_loss)
+        loss_history.append(epoch_loss)
+
     
-    return LSTMTrainedModel(encoder, model_emb, word_indexer, authors)
+    return LSTMTrainedModel(encoder, model_emb, word_indexer, authors, loss_history)
