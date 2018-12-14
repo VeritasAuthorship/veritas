@@ -254,7 +254,7 @@ class AuthorshipModel:
         # plt.plot(list(range(len(self.history))), self.history)
 
         filename = args.model + "_" + args.train_type + "_" + args.train_options + "_" + str(datetime.datetime.now()) + ".pdf"
-        with open(filename) as f:
+        with open(filename, "wb") as f:
             pickle.dump((self.history, correct, len(test_data)), f)
 
         return correct, len(test_data)
