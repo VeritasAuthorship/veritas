@@ -73,11 +73,34 @@ def get_data(args):
         data = make_sentencewise_data(data)
 
     return data
+"""
+\dhruv{
+We compared these results with those we get by replacing the LSTM cells with GRU cells in this instead of LSTM recurrent cells. It seems that the results do not differ too much, but the LSTM model does better across datasets. The GRU model achieves 76.6\% accuracy on the Spooky dataset, 30.8\% on the Gutenberg dataset, and 94.6\% on the Reuters dataset.
+}
 
+"""
 
 if __name__ == "__main__":
     args = arg_parse()
     print(args)
+
+    if args.model == "PLOT":
+        import matplotlib as mpl
+        mpl.use('TkAgg')
+        import matplotlib.pyplot as plt
+        import pickle
+
+        for file in os.listdir('plots'):
+            with open("plots/" + file, "rb") as f:
+                history, _, _ = pickle.load(f)
+                print(file)
+                plt.ylim(bottom=0)
+                # plt.xlim(left=0)
+                plt.xlabel("# Epochs")
+                plt.xlabel("Total Epoch Loss")
+                plt.plot(list(range(len(history))), history)
+                plt.show()
+
 
     if args.model == 'BASELINE':
         # Get books from train path and call baselineb model train function
@@ -237,6 +260,9 @@ if __name__ == "__main__":
     elif args.model == "SKLEARN":
         train_data, test_data, authors = data = get_data(args)
         sklearn_train(train_data, test_data, authors, args)
+
+
+
 
     elif args.model == 'VAE':
         if args.train_type == 'SPOOKY':
