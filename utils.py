@@ -270,8 +270,10 @@ class AuthorshipModel:
         # plt.ylabel("Loss")
         # plt.plot(list(range(len(self.history))), self.history)
 
-        filename = args.model + "_" + args.train_type + "_" + args.train_options + "_" + str(datetime.datetime.now()) + ".pdf"
+        filename = args.model + "_" + args.train_type + "_" + args.train_options + "_" + str(datetime.datetime.now()).replace(".", "_").replace(":", "_") + ".pdf"
+        import string
+        filename.rep
         with open(filename) as f:
-            pickle.dump((self.history, self.correct, self.incorrect))
+e            pickle.dump((self.history, self.correct, self.incorrect))
 
         # plt.savefig(args.model + ", " + args.train_type + ", " + args.train_options + ", " + str(datetime.datetime.now()) + ".pdf")
