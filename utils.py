@@ -212,7 +212,6 @@ class Example:
 
 
 class AuthorshipModel:
-
     def __init__(self):
         self.history = None
 
@@ -244,4 +243,14 @@ class AuthorshipModel:
                     print(test_data[i].passage)
 
         print("Correctness: " + str(correct) + "/" + str(len(test_data)), "->", correct / len(test_data))
+
+        if args.plot:
+            self.plot()
+
         return correct, len(test_data)
+
+    def plot(self):
+        import matplotlib.pyplot as plt
+        plt.xlabel("# Epochs")
+        plt.ylabel("Loss")
+        plt.plot(list(range(len(self.history))), self.history)

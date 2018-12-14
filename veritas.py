@@ -38,6 +38,7 @@ def arg_parse():
     parser.add_argument('--train_options', type=str, default='', help="Extra train options, eg pos tags embeddings")
     parser.add_argument('--sentencewise', type=bool, default=False, help="")
     parser.add_argument('--kaggle', type=bool, default=False, help="")
+    parser.add_argument('--plot', type=bool, default=False, help="")
 
     # Encoder-Decoder, VAE-RNN args
     parser.add_argument('--reverse_input', type=bool, default=False)
