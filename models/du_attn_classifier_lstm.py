@@ -61,7 +61,7 @@ class PretrainedEmbeddingLayer(nn.Module):
 
 # Gutenberg
 # British authors
-# Average accuracy: 400/2000 = .2 with 200 sentences/book/author, 5 authors (new test)
+# 723/2000 -> 0.3615
 
 # -------------------------
 # REUTERS Datset
