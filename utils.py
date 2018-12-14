@@ -247,15 +247,30 @@ class AuthorshipModel:
         if args.plot:
             self.plot(args)
 
+        import datetime
+        import pickle
+        # plt.xlabel("# Epochs")
+        # plt.ylabel("Loss")
+        # plt.plot(list(range(len(self.history))), self.history)
+
+        filename = args.model + "_" + args.train_type + "_" + args.train_options + "_" + str(datetime.datetime.now()) + ".pdf"
+        with open(filename) as f:
+            pickle.dump((self.history, correct, len(test_data)), f)
+
         return correct, len(test_data)
 
     def plot(self, args):
-        import matplotlib as mpl
-        mpl.use('TkAgg')
-        import matplotlib.pyplot as plt
+        # import matplotlib as mpl
+        # mpl.use('TkAgg')
+        # import matplotlib.pyplot as plt
         import datetime
-        plt.xlabel("# Epochs")
-        plt.ylabel("Loss")
-        plt.plot(list(range(len(self.history))), self.history)
+        import pickle
+        # plt.xlabel("# Epochs")
+        # plt.ylabel("Loss")
+        # plt.plot(list(range(len(self.history))), self.history)
 
-        plt.savefig(args.model + ", " + args.train_type + ", " + args.train_options + ", " + str(datetime.datetime.now()) + ".pdf")
+        filename = args.model + "_" + args.train_type + "_" + args.train_options + "_" + str(datetime.datetime.now()) + ".pdf"
+        with open(filename) as f:
+            pickle.dump((self.history, self.correct, self.incorrect))
+
+        # plt.savefig(args.model + ", " + args.train_type + ", " + args.train_options + ", " + str(datetime.datetime.now()) + ".pdf")
