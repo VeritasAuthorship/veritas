@@ -275,7 +275,7 @@ class EncDecTrainedModel(AuthorshipModel):
                 for id, probs in list(zip(ids, probabilities)):
                     probs = [str(i) for i in probs]
                     f.write(id + "," + ",".join(probs) + "\n")
-            return predictions
+        return predictions
 
     def myevaluate(self, test_data, args):
         test_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
