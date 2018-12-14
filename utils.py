@@ -213,6 +213,9 @@ class Example:
 
 class AuthorshipModel:
 
+    def __init__(self):
+        self.history = None
+
     def _predictions(self, test_data, args):
         pass
 
