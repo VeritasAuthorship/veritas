@@ -245,12 +245,17 @@ class AuthorshipModel:
         print("Correctness: " + str(correct) + "/" + str(len(test_data)), "->", correct / len(test_data))
 
         if args.plot:
-            self.plot()
+            self.plot(args)
 
         return correct, len(test_data)
 
-    def plot(self):
+    def plot(self, args):
+        import matplotlib as mpl
+        mpl.use('TkAgg')
         import matplotlib.pyplot as plt
+        import datetime
         plt.xlabel("# Epochs")
         plt.ylabel("Loss")
         plt.plot(list(range(len(self.history))), self.history)
+
+        plt.savefig(args.model + ", " + args.train_type + ", " + args.train_options + ", " + str(datetime.datetime.now()) + ".pdf")

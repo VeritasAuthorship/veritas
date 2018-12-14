@@ -281,7 +281,7 @@ def _example(input_tensor, output_tensor, input_lens_tensor,
 
 
 class DuAttentionModel(AuthorshipModel):
-    def __init__(self, encoder, input_emb, decoder, output_emb, input_indexer, output_indexer, args, max_len):
+    def __init__(self, encoder, input_emb, decoder, output_emb, input_indexer, output_indexer, args, max_len, history=None):
         # Add any args you need here
         self.encoder = encoder
         self.decoder = decoder
@@ -291,6 +291,7 @@ class DuAttentionModel(AuthorshipModel):
         self.output_indexer = output_indexer
         self.args = args
         self.max_len = max_len
+        self.history = history
 
     def _predictions(self, test_data, args):
         test_data.sort(key=lambda ex: len(word_tokenize(ex.passage)), reverse=True)
@@ -397,6 +398,8 @@ def train_du_attention_model(train_data, test_data, authors, word_vectors, args,
     loss_function = nn.NLLLoss()
     num_epochs = args.epochs
 
+    loss_history = []
+
     for epoch in range(num_epochs):
 
         epoch_loss = 0
@@ -414,7 +417,8 @@ def train_du_attention_model(train_data, test_data, authors, word_vectors, args,
                                    loss_function, word_indexer, output_indexer)
 
         print("Epoch " + str(epoch) + " Loss:", epoch_loss)
+        loss_history.append(epoch_loss)
         # if epoch == 0:
         #EncDecTrainedModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len).evaluate(test_data)
 
-    return DuAttentionModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len)
+    return DuAttentionModel(encoder, input_emb, decoder, output_emb, word_indexer, authors, args, input_max_len, loss_history)
