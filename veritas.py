@@ -244,22 +244,23 @@ if __name__ == "__main__":
         sklearn_train(train_data, test_data, authors, args)
 
     elif args.model == 'VAE':
-        if args.train_type == 'SPOOKY':
-            train_data, test_data, authors = spooky_authorship_data(args)
-            word_indexer = Indexer()
-            add_dataset_features(train_data, word_indexer)
-            add_dataset_features(test_data, word_indexer)
-            
-            pretrained = True
-            relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
-            word_vectors = read_word_embeddings(args.word_vecs_path)
+        train_data, test_data, authors = spooky_authorship_data(args)
+        word_indexer = Indexer()
+        add_dataset_features(train_data, word_indexer)
+        add_dataset_features(test_data, word_indexer)
 
-            print("Finished extracting embeddings")
-            print("training")
-            trained_model = train_vae(train_data, test_data, authors, word_vectors, args, pretrained=pretrained)
+        pretrained = True
+        relativize(args.word_vecs_path_input, args.word_vecs_path, word_indexer)
+        word_vectors = read_word_embeddings(args.word_vecs_path)
 
-            print("testing")
-            trained_model.evaluate(test_data, args)
+        print("Finished extracting embeddings")
+        print("training")
+        trained_model = train_vae(train_data, test_data, authors, word_vectors, args, pretrained=pretrained)
+
+        print("testing")
+        trained_model.evaluate(test_data, args)
+
+
 
     else:
         raise Exception("Please select appropriate model")
