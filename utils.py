@@ -255,10 +255,3 @@ class AuthorshipModel:
 
         return correct, len(test_data)
 
-    def plot(self, args):
-        filename = args.model + "_" + args.train_type + "_" + args.train_options + "_" + str(datetime.datetime.now()).replace(".", "_").replace(":", "_") + ".pdf"
-        filename.rep
-        with open(filename) as f:
-            pickle.dump((self.history, self.correct, self.incorrect))
-
-        # plt.savefig(args.model + ", " + args.train_type + ", " + args.train_options + ", " + str(datetime.datetime.now()) + ".pdf")

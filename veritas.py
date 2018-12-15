@@ -25,7 +25,7 @@ from models.sentence_wise_classification import *
 from models.sklearn_baselines import sklearn_train
 from reuters_data import create_reuters_data
 from spooky_authorship import spooky_authorship_data
-# from models.vae import *
+from models.vae import *
 
 
 # Read in command line arguments to the system
