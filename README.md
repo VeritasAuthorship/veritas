@@ -7,6 +7,8 @@ Python3
 Pytorch
 nltk
 numpy
+keras (optional, remove keras_lstm.py file if not needed)
+sklearn (optional, remove sklearn_baselines.py if not needed)
 ```
 
 To get all necessary files and datasets for the project, run 
@@ -25,6 +27,10 @@ Customizations possible:
 --model, type=str, default='BASELINE', help="Model to run"
 --train_type, type=str, default="GUTENBERG", help="Data type - Gutenberg or custom"
 --train_path, type=str, default='data/american/', help='Path to the training set'
+--test_path, type=str, default='data/gut-test/british', help='Path to the test set'
+ --train_options', type=str, default='', help="Extra train options, eg pos tags embeddings (POS)"
+ --sentencewise', type=bool, default=False, help="Train on datasets sentence-wise or passage-wise"
+
 --reverse_input, type=bool, default=False
 --batch_size, type=int, default=1, help="batch size for encoder training"
 --emb_dropout, type=float, default=0.2, help="dropout for embedding layer"
@@ -34,3 +40,6 @@ Customizations possible:
 --word_vecs_path_input, type=str, default='data/glove.6B.300d.txt', help='path to word vectors file'
 --word_vecs_path, type=str, default='data/glove.6B.300d-relativized.txt', help='path to word vectors file'
 --embedding_size, type=int, default=300, help='Embedding size'
+--epochs, type=int, default=8, help='Number of epochs'
+--lr, type=float, default=1e-4 * 5, help='Learning rate'
+--z_dim', type=int, default=50, help='Size of latent representation; Only useful for VAE model'
