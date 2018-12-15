@@ -273,7 +273,7 @@ def train_lstm_model(train_data, test_data, authors, word_vectors, args, pretrai
             loss.backward()
             optimizer.step()
         print("Epoch " + str(epoch) + " Loss:", epoch_loss)
-        loss_history.append(epoch_loss)
+        loss_history.append(epoch_loss.item())
 
     
     return LSTMTrainedModel(encoder, model_emb, word_indexer, authors, loss_history)
