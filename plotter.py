@@ -16,13 +16,16 @@ def plot_all(*files):
             history, _, _ = pickle.load(f)
 
         model = file.split("_")[0]
-        data = file.split("_")[2]
-        options = file.split("_")[3]
+        data = file.split("_")[1]
+        options = file.split("_")[2]
+
+        print(file.split("_"))
 
         plt.plot(list(range(len(history))), history, label=model + ", " + options)
 
     plt.legend()
     plt.show()
+plot_all("LSTM_REUTERS__2018-12-15 00:51:08.850689.pdf", "LSTM_REUTERS_POS_2018-12-15 00:56:55.312194.pdf")
 plot_all("GRU_ATTN_REUTERS__2018-12-15 00_31_13_733488.pickle")
 plot_all("LSTM_ATTN_SPOOKY__2018-12-14 17_00_47_199175.pickle", "LSTM_ATTN_SPOOKY_POS_2018-12-14 17_29_14_816444.pickle")#,"LSTM_ATTN_SPOOKY_POS_2018-12-14 18_11_57_447594.pickle")
 plot_all("LSTM_REUTERS__2018-12-14 19:44:17.726774.pickle", "LSTM_REUTERS_POS_2018-12-14 22_25_37_246999.pickle")
