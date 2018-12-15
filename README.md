@@ -11,10 +11,11 @@ numpy
 
 To get all necessary files and datasets for the project, run 
 
-'''
+```
 get_set_go.sh
-'''
+```
 This file downloads 300d pretrained GloVe word embeddings, as well as the Reuters dataset. Furthermore, it calls the setup.py file which downloads further packages required for POS tag conversion.
+Spooky Dataset may be downloaded from Kaggle (https://www.kaggle.com/c/spooky-author-identification/data)
 
 
 The project is customizable and includes several initialization options, including baseline (ngrams model), LSTM (LSTM classifier), LSTM_ATTN (encoder decoder model with Bahdanau Attention Mechanism (https://arxiv.org/pdf/1409.0473.pdf), VAE (Variational AutoEncoder - RNN classifier), and others. 
