@@ -2,7 +2,7 @@ import argparse
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.fwunctional as F
 import random
 import pyro
 import pyro.distributions as dist
@@ -297,6 +297,7 @@ def train_vae(train_data, test_data, authors, word_vectors, args, pretrained=Tru
 
     train_elbo = []
     # training loop. We train VAE and decoder separately
+    loss_history = []
     for epoch in range(num_epochs):
         # initialize loss accumulator
         epoch_loss = 0
@@ -311,8 +312,10 @@ def train_vae(train_data, test_data, authors, word_vectors, args, pretrained=Tru
             epoch_loss += svi.step(embedded_words)
 
         # report training diagnostics
-        train_elbo.append(epoch_loss)
+        train_elbo.append(epoch_loss.item())
         print("[epoch %03d]  average VAE training loss: %.4f" % (epoch, epoch_loss))
+
+
 
         for idx, X_batch in enumerate(all_train_input_data):
             if idx % 100 == 0:
@@ -336,7 +339,8 @@ def train_vae(train_data, test_data, authors, word_vectors, args, pretrained=Tru
             # Run backward
             loss.backward()
             dec_optimizer.step()
-        
+
+        loss_history += loss.item()
         print("Epoch " + str(epoch) + " Loss for Decoder:", epoch_loss)
 
     return VAERNNTrainedModel(vae,model_emb, decoder, word_indexer, authors, args, input_max_len)
