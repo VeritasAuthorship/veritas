@@ -197,7 +197,7 @@ class VAE(nn.Module):
         return z
 
 class VAERNNTrainedModel(AuthorshipModel):
-    def __init__(self, vae, input_emb, decoder, input_indexer, output_indexer, args, max_len):
+    def __init__(self, vae, input_emb, decoder, input_indexer, output_indexer, args, max_len, history=None):
         # Add any args you need here
         self.vae_encoder = vae
         self.decoder = decoder
@@ -206,6 +206,7 @@ class VAERNNTrainedModel(AuthorshipModel):
         self.output_indexer = output_indexer
         self.args = args
         self.max_len = max_len
+        self.history = history
 
     def _predictions(self, test_data, args):
         test_data.sort(key=lambda ex: len(word_tokenize(ex.passage)))
@@ -343,4 +344,4 @@ def train_vae(train_data, test_data, authors, word_vectors, args, pretrained=Tru
         loss_history += loss.item()
         print("Epoch " + str(epoch) + " Loss for Decoder:", epoch_loss)
 
-    return VAERNNTrainedModel(vae,model_emb, decoder, word_indexer, authors, args, input_max_len)
+    return VAERNNTrainedModel(vae,model_emb, decoder, word_indexer, authors, args, input_max_len, list(zip(train_elbo, loss_history)))
