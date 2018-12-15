@@ -9,9 +9,15 @@ nltk
 numpy
 ```
 
-Furthermore, the project uses word embeddings that can be downloaded from http://nlp.stanford.edu/data/glove.6B.zip. We utilize the 300d pretrained GloVe word embeddings. Place the embedding file in data directory.
+To get all necessary files and datasets for the project, run 
 
-The project is customizable and includes several initialization options, including baseline (ngrams model), LSTM (LSTM classifier), LSTM_ATTN (encoder decoder model with Bahdanau Attention Mechanism (https://arxiv.org/pdf/1409.0473.pdf). 
+'''
+get_set_go.sh
+'''
+This file downloads 300d pretrained GloVe word embeddings, as well as the Reuters dataset. Furthermore, it calls the setup.py file which downloads further packages required for POS tag conversion.
+
+
+The project is customizable and includes several initialization options, including baseline (ngrams model), LSTM (LSTM classifier), LSTM_ATTN (encoder decoder model with Bahdanau Attention Mechanism (https://arxiv.org/pdf/1409.0473.pdf), VAE (Variational AutoEncoder - RNN classifier), and others. 
 
 Customizations possible:
 ```
