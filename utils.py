@@ -2,6 +2,9 @@
 import random
 from nltk import sent_tokenize, word_tokenize, pos_tag, RegexpTokenizer
 import numpy as np
+import datetime
+import string
+import pickle
 
 '''
  Create a bijection betweeen int and object. May be used for reverse indexing
@@ -245,15 +248,7 @@ class AuthorshipModel:
         print("Correctness: " + str(correct) + "/" + str(len(test_data)), "->", correct / len(test_data))
 
         if args.plot:
-        #     self.plot(args)
-
-            import datetime
-            import pickle
-            # plt.xlabel("# Epochs")
-            # plt.ylabel("Loss")
-            # plt.plot(list(range(len(self.history))), self.history)
-
-
+        
             filename = args.model + "_" + args.train_type + "_" + args.train_options + "_" + str(datetime.datetime.now()) + ".pdf"
             with open(filename, "wb") as f:
                 pickle.dump((self.history, correct, len(test_data)), f)
@@ -261,16 +256,8 @@ class AuthorshipModel:
         return correct, len(test_data)
 
     def plot(self, args):
-        # import matplotlib as mpl
-        # mpl.use('TkAgg')
-        # import matplotlib.pyplot as plt
-        import datetime
-        import pickle
-        # plt.xlabel("# Epochs")
-        # plt.ylabel("Loss")
-        # plt.plot(list(range(len(self.history))), self.history)
-
-        filename = args.model + "_" + args.train_type + "_" + args.train_options + "_" + str(datetime.datetime.now()) + ".pdf"
+        filename = args.model + "_" + args.train_type + "_" + args.train_options + "_" + str(datetime.datetime.now()).replace(".", "_").replace(":", "_") + ".pdf"
+        filename.rep
         with open(filename) as f:
             pickle.dump((self.history, self.correct, self.incorrect))
 
