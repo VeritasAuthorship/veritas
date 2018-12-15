@@ -84,24 +84,6 @@ if __name__ == "__main__":
     args = arg_parse()
     print(args)
 
-    if args.model == "PLOT":
-        import matplotlib as mpl
-        mpl.use('TkAgg')
-        import matplotlib.pyplot as plt
-        import pickle
-
-        for file in os.listdir('plots'):
-            with open("plots/" + file, "rb") as f:
-                history, _, _ = pickle.load(f)
-                print(file)
-                plt.ylim(bottom=0)
-                # plt.xlim(left=0)
-                plt.xlabel("# Epochs")
-                plt.xlabel("Total Epoch Loss")
-                plt.plot(list(range(len(history))), history)
-                plt.show()
-
-
     if args.model == 'BASELINE':
         # Get books from train path and call baselineb model train function
         train_data, test_data, authors = get_data(args)
