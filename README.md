@@ -1,5 +1,5 @@
 # veritas
-Authorship Recognition using Attention-based Recurrent Neural Nets
+Authorship Recognition using Attention-based Recurrent Neural Nets. The paper which details results as well as techniques can be found here: https://apps.cs.utexas.edu/apps/tech-reports/171205
 
 Requirements:
 ```
